@@ -13,7 +13,7 @@ The code must be in a repo before Render/Vercel can deploy it.
 ## 1. Supabase (database + auth)
 
 1. https://supabase.com/dashboard → New project → name `mezban`, set a strong DB password, region closest to you (e.g. Singapore).
-2. Wait for provisioning → left menu **SQL Editor** → New query → paste the FULL contents of `supabase/migrations/0001_schema.sql` → Run. Then New query → paste `supabase/migrations/0002_seed_usama.sql` → Run. Both must report success.
+2. Wait for provisioning → left menu **SQL Editor** → New query → paste the FULL contents of `supabase/migrations/0001_schema.sql` → Run. Then `0002_seed_usama.sql` → Run. Then `0003_security.sql` → Run (security lockdown). Then `0004_menu_photos.sql` → Run (starter dish photos). All four must report success. If you already ran 0001–0003, just run 0004 now.
 3. **Project Settings → API**: copy the Project URL and the `service_role` key (keep secret!) and the `anon` key.
 4. Create the owner login: **Authentication → Users → Add user → Create new user** (email + password, tick "Auto Confirm user"). Copy the UID.
 5. **SQL Editor** → run:
