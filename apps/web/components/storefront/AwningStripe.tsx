@@ -1,4 +1,4 @@
-/** Kababjees-style red/white awning — reskinned to the tenant brand color. */
+/** Kababjees-style red/white awning - reskinned to the tenant brand color. */
 export function AwningStripe() {
   return (
     <div aria-hidden className="sticky top-0 z-50">

@@ -45,7 +45,7 @@ export function TrackClient({ order: initial, themePrimary }: Props) {
           setOrder((o) => (o.status !== fresh.status ? fresh : o));
         }
       } catch {
-        /* offline — keep last known status */
+        /* offline - keep last known status */
       }
     }, 15000);
 

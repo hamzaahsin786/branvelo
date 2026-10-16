@@ -4,7 +4,7 @@ import { fetchCatalog, fetchOrderPublic } from "@/lib/api";
 import { TenantProvider } from "@/lib/tenant-context";
 import { TrackClient } from "@/components/storefront/TrackClient";
 
-/** Public order tracking — live status via Realtime broadcast + polling. */
+/** Public order tracking - live status via Realtime broadcast + polling. */
 export default async function TrackPage({
   params,
 }: {

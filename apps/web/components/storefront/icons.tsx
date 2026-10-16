@@ -1,4 +1,4 @@
-/** Inline SVG icons (no icon library — keeps the bundle tiny). */
+/** Inline SVG icons (no icon library - keeps the bundle tiny). */
 
 function base(props: React.SVGProps<SVGSVGElement>) {
   return {

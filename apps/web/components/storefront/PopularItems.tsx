@@ -8,7 +8,7 @@ interface Props {
   onAdd: (item: MenuItem) => void;
 }
 
-/** "Popular items" — horizontal snap row of badge-flagged items. */
+/** "Popular items" - horizontal snap row of badge-flagged items. */
 export function PopularItems({ items, onAdd }: Props) {
   const popular = items.filter(
     (i) => i.badges.includes("popular") || i.badges.includes("bestseller")

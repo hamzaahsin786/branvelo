@@ -13,7 +13,7 @@ interface Props {
   onSave: (loc: DinerLocation) => void;
 }
 
-/** Delivery/pickup gate — Kababjees-style entry modal, reskinned. */
+/** Delivery/pickup gate - Kababjees-style entry modal, reskinned. */
 export function LocationGate({ open, zones, initial, onClose, onSave }: Props) {
   const [type, setType] = useState<"delivery" | "pickup">(
     initial?.type ?? "delivery"
@@ -74,7 +74,7 @@ export function LocationGate({ open, zones, initial, onClose, onSave }: Props) {
               <option value="">Select area…</option>
               {zones.map((z) => (
                 <option key={z.id} value={z.id}>
-                  {z.name} — {formatRs(z.fee)} delivery
+                  {z.name}: {formatRs(z.fee)} delivery
                 </option>
               ))}
             </select>

@@ -162,7 +162,7 @@ export function OrderDetail({ order: initial, history }: Props) {
           {history.map((h) => (
             <li key={h.id} className="flex justify-between text-neutral-600">
               <span>
-                {h.from_status ? `${h.from_status} → ` : ""}
+                {h.from_status ? `${h.from_status} to ` : ""}
                 <strong>{h.to_status}</strong>
                 {h.actor && ` · ${h.actor}`}
               </span>

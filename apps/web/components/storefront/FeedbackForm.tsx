@@ -10,7 +10,7 @@ const TYPES = [
   ["suggestion", "Suggestion"],
 ] as const;
 
-/** Feedback / complaint form — posts to the API (rate-limited). */
+/** Feedback / complaint form - posts to the API (rate-limited). */
 export function FeedbackForm() {
   const slug = useTenantSlug();
   const [type, setType] = useState<(typeof TYPES)[number][0]>("complaint");
@@ -53,7 +53,7 @@ export function FeedbackForm() {
       setPhone("");
       setOrderNo("");
     } catch {
-      setError("Network error — please try again");
+      setError("Network error. Please try again");
       setStatus("error");
     }
   };
@@ -63,12 +63,12 @@ export function FeedbackForm() {
       <div className="rounded-3xl bg-[var(--muted)] p-6">
         <h2 className="text-xl font-extrabold">From Complaint to Care</h2>
         <p className="mt-1 text-sm text-neutral-500">
-          Tell us what went right — or what did not. We read everything.
+          Tell us what went right, or what did not. We read everything.
         </p>
 
         {status === "done" ? (
           <p className="mt-4 rounded-xl bg-green-50 p-4 text-sm font-medium text-green-800">
-            Thank you — your feedback has been received.
+            Thank you. Your feedback has been received.
           </p>
         ) : (
           <div className="mt-4 flex flex-col gap-3">

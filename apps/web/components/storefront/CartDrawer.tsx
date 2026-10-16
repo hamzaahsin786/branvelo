@@ -63,7 +63,7 @@ export function CartDrawer({ tenant, zones, location, onLocationOpen }: Props) {
                 <div className="flex-1 overflow-y-auto p-4">
                   {lines.length === 0 ? (
                     <p className="mt-10 text-center text-sm text-neutral-500">
-                      Your cart is empty — add something tasty.
+                      Your cart is empty. Add something tasty.
                     </p>
                   ) : (
                     <ul className="flex flex-col gap-3">
@@ -252,7 +252,7 @@ function CheckoutForm({
         tracking_token: body.tracking_token as string,
       });
     } catch {
-      setError("Network error — please try again");
+      setError("Network error. Please try again");
     } finally {
       setPlacing(false);
     }
@@ -293,7 +293,7 @@ function CheckoutForm({
         <input
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          placeholder="Phone — 03XXXXXXXXX"
+          placeholder="Phone: 03XXXXXXXXX"
           inputMode="tel"
           className={inputCls}
         />
@@ -314,7 +314,7 @@ function CheckoutForm({
               <option value="">Select area…</option>
               {zones.map((z) => (
                 <option key={z.id} value={z.id}>
-                  {z.name} — {formatRs(z.fee)} delivery
+                  {z.name}: {formatRs(z.fee)} delivery
                 </option>
               ))}
             </select>

@@ -48,7 +48,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 /**
- * Live order feed — subscribes to postgres_changes on orders (RLS-scoped to
+ * Live order feed - subscribes to postgres_changes on orders (RLS-scoped to
  * the staff member's tenant) and beeps on every new order.
  */
 export function OrderFeed({

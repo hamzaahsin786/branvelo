@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 /**
- * Server-side Supabase client — used ONLY for reading the admin's auth
+ * Server-side Supabase client - used ONLY for reading the admin's auth
  * session cookie. All business data flows through the Fastify API.
  */
 export function createServerSupabase() {
@@ -23,7 +23,7 @@ export function createServerSupabase() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Server Component — setting cookies not allowed here.
+            // Server Component - setting cookies not allowed here.
           }
         },
       },

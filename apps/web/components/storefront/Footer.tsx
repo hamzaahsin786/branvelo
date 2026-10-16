@@ -2,7 +2,7 @@ import type { Tenant } from "@mezban/shared";
 import { displayPkPhone, hoursSummary } from "@mezban/shared";
 import { ClockIcon, PhoneIcon, PinIcon } from "./icons";
 
-/** Footer: contact, hours, map link, help — plus the Mezban bottom bar. */
+/** Footer: contact, hours, map link, help - plus the Mezban bottom bar. */
 export function Footer({ tenant }: { tenant: Tenant }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     tenant.address || tenant.name

@@ -1,5 +1,5 @@
 /**
- * API client — every business-data call goes to the Fastify API.
+ * API client - every business-data call goes to the Fastify API.
  * The x-tenant-slug header is always sent (middleware sets it on page
  * requests; client fetches send it explicitly since the API is cross-origin).
  */

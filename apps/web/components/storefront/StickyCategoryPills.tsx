@@ -8,7 +8,7 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-/** Sticky scrollspy pills — the menu's tab navigation. */
+/** Sticky scrollspy pills - the menu's tab navigation. */
 export function StickyCategoryPills({ categories, activeId, onSelect }: Props) {
   return (
     <div className="sticky top-[74px] z-30 -mx-3 bg-white/95 px-3 py-2 backdrop-blur">

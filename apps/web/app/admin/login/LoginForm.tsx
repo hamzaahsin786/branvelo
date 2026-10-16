@@ -6,7 +6,7 @@ import { createBrowserSupabase } from "@/lib/supabase-browser";
 import { apiFetch } from "@/lib/api";
 import { useTenantSlug } from "@/lib/tenant-context";
 
-/** Admin sign-in — Supabase Auth email/password, then role-checked via the API. */
+/** Admin sign-in - Supabase Auth email/password, then role-checked via the API. */
 export function LoginForm() {
   const router = useRouter();
   const slug = useTenantSlug();
@@ -40,7 +40,7 @@ export function LoginForm() {
       router.push("/admin");
       router.refresh();
     } catch {
-      setError("Network error — please try again");
+      setError("Network error. Please try again");
     } finally {
       setBusy(false);
     }

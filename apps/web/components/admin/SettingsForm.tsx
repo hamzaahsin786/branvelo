@@ -77,7 +77,7 @@ export function SettingsForm({ initialSettings, initialZones }: Props) {
       days = JSON.parse(hoursText) as Record<string, { open: string; close: string }>;
       for (const [day, h] of Object.entries(days)) {
         if (!/^\d{2}:\d{2}$/.test(h.open) || !/^\d{2}:\d{2}$/.test(h.close)) {
-          throw new Error(`Bad time format on ${day} — use "HH:MM"`);
+          throw new Error(`Bad time format on ${day}: use "HH:MM"`);
         }
       }
     } catch (e) {
