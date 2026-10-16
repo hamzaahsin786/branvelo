@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #15803d;
+  --brand-dark: #14532d;
+  --accent: #ffc400;
+  --ink: #1a1a1a;
+  --muted: #f3f4f6;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--ink);
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hide scrollbars on horizontal scrollers (category tiles, pills) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Kababjees-style awning: brand/white stripes with scalloped bottom edge */
+.awning-stripes {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--brand) 0 28px,
+    #ffffff 28px 56px
+  );
+}
+.awning-scallop {
+  height: 12px;
+  background-image: radial-gradient(
+    circle at 14px -4px,
+    transparent 14px,
+    var(--brand) 15px
+  );
+  background-size: 28px 12px;
+  background-repeat: repeat-x;
+}
