@@ -40,15 +40,10 @@ async function main() {
     allowedHeaders: ["Content-Type", "Authorization", "x-tenant-slug"],
   });
 
-  // Rate limiting. global:false → only routes with an explicit config are
-  // limited (/health has none, so keep-warm pings can never 429).
-  await app.register(rateLimit, {
-    global: false,
-    // No PII in the limit key: client IP only.
-    keyGenerator: (req: FastifyRequest) => req.ip,
-  });
-
   // Apply the admin budget to every /api/admin/* route at registration time.
+  // NOTE: this onRoute hook must be added BEFORE the rate-limit plugin is
+  // registered below, so the plugin sees the config when its own onRoute
+  // hook fires for each route.
   app.addHook("onRoute", (routeOptions) => {
     if (typeof routeOptions.url === "string" && routeOptions.url.startsWith("/api/admin/")) {
       routeOptions.config = {
@@ -56,6 +51,14 @@ async function main() {
         rateLimit: ADMIN_RATE_LIMIT,
       };
     }
+  });
+
+  // Rate limiting. global:false → only routes with an explicit config are
+  // limited (/health has none, so keep-warm pings can never 429).
+  await app.register(rateLimit, {
+    global: false,
+    // No PII in the limit key: client IP only.
+    keyGenerator: (req: FastifyRequest) => req.ip,
   });
 
   // Tenant resolution for every /api/* request (except /health)
