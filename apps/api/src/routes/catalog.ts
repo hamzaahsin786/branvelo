@@ -3,7 +3,7 @@ import type { CatalogData } from "@mezban/shared";
 import { supabase } from "../lib/supabase";
 
 /**
- * GET /api/catalog — public storefront payload for the resolved tenant:
+ * GET /api/catalog - public storefront payload for the resolved tenant:
  * tenant brand data + active categories + available items + active zones.
  * The frontend caches this (ISR, 60s).
  */

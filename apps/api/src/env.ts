@@ -1,4 +1,4 @@
-/** API env — validated once at boot. */
+/** API env - validated once at boot. */
 
 function required(name: string): string {
   const v = process.env[name];

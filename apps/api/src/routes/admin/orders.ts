@@ -11,7 +11,7 @@ const ORDER_COLUMNS =
   "id, tenant_id, branch_id, order_no, tracking_token, customer_id, customer_name, customer_phone, customer_address, type, status, items, subtotal, discount, delivery_fee, tax, total, zone_id, coupon_code, payment_method, payment_ref, scheduled_for, notes, source, created_at, updated_at";
 
 export async function adminOrderRoutes(app: FastifyInstance) {
-  /** GET /api/admin/orders — recent orders for the dashboard (newest first). */
+  /** GET /api/admin/orders - recent orders for the dashboard (newest first). */
   app.get("/api/admin/orders", async (request, reply) => {
     const query = request.query as { status?: string; limit?: string };
     const db = supabase();
@@ -30,7 +30,7 @@ export async function adminOrderRoutes(app: FastifyInstance) {
     return reply.send((data ?? []) as OrderRow[]);
   });
 
-  /** GET /api/admin/orders/:id — single order with items + status history. */
+  /** GET /api/admin/orders/:id - single order with items + status history. */
   app.get("/api/admin/orders/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
     const db = supabase();
@@ -52,7 +52,7 @@ export async function adminOrderRoutes(app: FastifyInstance) {
   });
 
   /**
-   * PATCH /api/admin/orders/:id/status — advance (or cancel) an order.
+   * PATCH /api/admin/orders/:id/status - advance (or cancel) an order.
    * The state machine is enforced: only nextStatuses(from) are allowed.
    */
   app.patch("/api/admin/orders/:id/status", async (request, reply) => {

@@ -1,5 +1,5 @@
 /**
- * @mezban/shared — types
+ * @mezban/shared - types
  * Single source of truth for domain types, imported by apps/web and apps/api.
  */
 
@@ -13,7 +13,7 @@ export interface Theme {
 
 export interface DayHours {
   open: string; // "HH:MM" 24h
-  close: string; // "HH:MM" 24h — close <= open means past midnight (next day)
+  close: string; // "HH:MM" 24h - close <= open means past midnight (next day)
 }
 
 export interface HoursJson {

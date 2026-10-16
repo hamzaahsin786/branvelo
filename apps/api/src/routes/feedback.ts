@@ -3,7 +3,7 @@ import { FeedbackSchema } from "@mezban/shared";
 import { supabase } from "../lib/supabase";
 import { FEEDBACK_RATE_LIMIT } from "../lib/rate-limit";
 
-/** POST /api/feedback — diner feedback / complaints (10/min per IP). */
+/** POST /api/feedback - diner feedback / complaints (10/min per IP). */
 export async function feedbackRoutes(app: FastifyInstance) {
   app.post(
     "/api/feedback",

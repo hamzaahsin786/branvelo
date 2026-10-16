@@ -1,4 +1,4 @@
-/** @mezban/shared — public entrypoint. */
+/** @mezban/shared - public entrypoint. */
 export * from "./types";
 export * from "./schemas";
 export * from "./format";

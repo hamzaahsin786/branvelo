@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { SettingsUpdateSchema } from "@mezban/shared";
 import { supabase } from "../../lib/supabase";
 
-/** GET /api/admin/me — who am I (used by the web admin shell + login check). */
+/** GET /api/admin/me - who am I (used by the web admin shell + login check). */
 export async function adminMeRoutes(app: FastifyInstance) {
   app.get("/api/admin/me", async (request, reply) => {
     const { data: tenant } = await supabase()
@@ -21,7 +21,7 @@ export async function adminMeRoutes(app: FastifyInstance) {
   });
 }
 
-/** GET + PUT /api/admin/settings — brand, contact, hours, tax. */
+/** GET + PUT /api/admin/settings - brand, contact, hours, tax. */
 export async function adminSettingsRoutes(app: FastifyInstance) {
   app.get("/api/admin/settings", async (request, reply) => {
     const { data, error } = await supabase()

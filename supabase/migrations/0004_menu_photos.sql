@@ -1,4 +1,4 @@
--- 0004_menu_photos.sql — starter dish photos for the Usama Burgers pilot.
+-- 0004_menu_photos.sql - starter dish photos for the Usama Burgers pilot.
 -- These are AI-generated placeholder photos committed in apps/web/public/menu/.
 -- Replace with real dish photography anytime via the admin menu manager (photo_url),
 -- or upload to the menu-photos Supabase Storage bucket and paste the URL.

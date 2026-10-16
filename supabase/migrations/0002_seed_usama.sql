@@ -1,4 +1,4 @@
--- Mezban Phase 1 — seed: Usama Burgers (first tenant)
+-- Mezban Phase 1 - seed: Usama Burgers (first tenant)
 -- Data verbatim from docs/research/restaurant-data.md (Google Maps listing, 2026-10-16).
 -- Prices in PKR, no decimals. Hours cross midnight (12:00 -> 04:30 next day).
 
@@ -45,7 +45,7 @@ begin
         "sun": {"open": "12:00", "close": "04:30"}
       }
     }'::jsonb,
-    'Open till 4:30 AM — Lahore''s favourite late-night burgers',
+    'Open till 4:30 AM. Lahore''s favourite late-night burgers',
     'active',
     'starter',
     0

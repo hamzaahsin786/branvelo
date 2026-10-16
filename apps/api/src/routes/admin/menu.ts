@@ -65,7 +65,7 @@ export async function adminMenuRoutes(app: FastifyInstance) {
     if ((count ?? 0) > 0) {
       return reply
         .code(400)
-        .send({ error: "Category has items — move or delete them first" });
+        .send({ error: "Category has items. Move or delete them first" });
     }
     const { error } = await db
       .from("categories")

@@ -1,9 +1,9 @@
 /**
- * @mezban/shared — Pakistan-first formatting helpers.
+ * @mezban/shared - Pakistan-first formatting helpers.
  */
 import type { HoursJson } from "./types";
 
-/** Rs 1,250 — no decimals, Pakistani thousands separators. */
+/** Rs 1,250 - no decimals, Pakistani thousands separators. */
 export function formatRs(n: number): string {
   return "Rs " + Math.round(n).toLocaleString("en-PK");
 }
@@ -55,7 +55,7 @@ export function isOpenNow(hours: HoursJson, now: Date = new Date()): boolean {
   return openAt(days[now.getDay()]);
 }
 
-/** "12:00 PM – 4:30 AM" summary for the footer. */
+/** "12:00 PM - 4:30 AM" summary for the footer. */
 export function hoursSummary(hours: HoursJson): string {
   const fmt = (hhmm: string): string => {
     const [h, m] = hhmm.split(":").map(Number);
@@ -65,5 +65,5 @@ export function hoursSummary(hours: HoursJson): string {
   };
   const mon = hours.days?.mon;
   if (!mon) return "";
-  return `${fmt(mon.open)} – ${fmt(mon.close)}`;
+  return `${fmt(mon.open)} - ${fmt(mon.close)}`;
 }

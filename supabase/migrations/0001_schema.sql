@@ -1,4 +1,4 @@
--- Mezban Phase 1 — core schema
+-- Mezban Phase 1 - core schema
 -- Multi-tenant: every tenant row carries tenant_id. RLS enforces scoping.
 -- Run in Supabase SQL editor (or `supabase db push`).
 

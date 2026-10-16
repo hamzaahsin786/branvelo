@@ -17,7 +17,7 @@ interface DbMenuItem extends MenuItem {
 
 export async function orderRoutes(app: FastifyInstance) {
   /**
-   * POST /api/orders — diner checkout (20/min per IP).
+   * POST /api/orders - diner checkout (20/min per IP).
    * Prices are ALWAYS re-read from the DB; client totals are never trusted.
    */
   app.post(
@@ -37,7 +37,7 @@ export async function orderRoutes(app: FastifyInstance) {
     // 1) PK phone validation + normalization
     const phone = normalizePkPhone(input.customer_phone);
     if (!phone) {
-      return reply.code(400).send({ error: "Invalid phone number — use 03XXXXXXXXX" });
+      return reply.code(400).send({ error: "Invalid phone number. Use 03XXXXXXXXX" });
     }
 
     // 2) Re-read every item from the DB (tenant-scoped); verify availability
@@ -123,7 +123,7 @@ export async function orderRoutes(app: FastifyInstance) {
       });
       if (claimErr || claimed !== true) {
         request.log.warn({ couponCode }, "coupon claim lost the race");
-        return reply.code(400).send({ error: "This coupon just ran out — please try another" });
+        return reply.code(400).send({ error: "This coupon just ran out. Please try another" });
       }
       couponClaimed = true;
     }
@@ -303,7 +303,7 @@ export async function orderRoutes(app: FastifyInstance) {
   );
 
   /**
-   * GET /api/orders/:id — public tracking lookup (tenant-scoped).
+   * GET /api/orders/:id - public tracking lookup (tenant-scoped).
    * :id accepts the tracking token or the raw order UUID.
    */
   app.get("/api/orders/:id", async (request, reply) => {
