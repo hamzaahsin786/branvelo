@@ -1,4 +1,4 @@
-# Mezban — Deploy Guide (Phase 1)
+# Branvelo — Deploy Guide (Phase 1)
 
 Target: **Supabase** (database) + **Render** (Fastify API) + **Vercel** (Next.js web). All free tiers. Total cost: Rs 0.
 

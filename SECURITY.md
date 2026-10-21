@@ -1,4 +1,4 @@
-# Mezban — Security Model
+# Branvelo — Security Model
 
 Last reviewed: 2026-10-16 (post-Phase-1 hardening audit).
 

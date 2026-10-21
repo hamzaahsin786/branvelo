@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { CatalogData } from "@mezban/shared";
+import type { CatalogData } from "@branvelo/shared";
 import { supabase } from "../lib/supabase";
 
 /**

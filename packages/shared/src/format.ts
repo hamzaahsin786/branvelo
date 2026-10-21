@@ -1,5 +1,5 @@
 /**
- * @mezban/shared - Pakistan-first formatting helpers.
+ * @branvelo/shared - Pakistan-first formatting helpers.
  */
 import type { HoursJson } from "./types";
 

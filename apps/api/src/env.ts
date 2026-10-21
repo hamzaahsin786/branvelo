@@ -2,7 +2,7 @@
 
 function required(name: string): string {
   const v = process.env[name];
-  if (!v) throw new Error(`[mezban-api] Missing required env var: ${name}`);
+  if (!v) throw new Error(`[branvelo-api] Missing required env var: ${name}`);
   return v;
 }
 

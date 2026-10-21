@@ -4,7 +4,7 @@ import {
   CategoryUpdateSchema,
   MenuItemCreateSchema,
   MenuItemUpdateSchema,
-} from "@mezban/shared";
+} from "@branvelo/shared";
 import { supabase } from "../../lib/supabase";
 
 const CATEGORY_COLUMNS =

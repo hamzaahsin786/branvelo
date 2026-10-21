@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { ZoneCreateSchema, ZoneUpdateSchema } from "@mezban/shared";
+import { ZoneCreateSchema, ZoneUpdateSchema } from "@branvelo/shared";
 import { supabase } from "../../lib/supabase";
 
 const ZONE_COLUMNS =

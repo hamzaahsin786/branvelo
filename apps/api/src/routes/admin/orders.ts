@@ -3,7 +3,7 @@ import {
   OrderStatusUpdateSchema,
   isValidTransition,
   type OrderRow,
-} from "@mezban/shared";
+} from "@branvelo/shared";
 import { supabase } from "../../lib/supabase";
 import { broadcastOrderStatus } from "../../lib/broadcast";
 

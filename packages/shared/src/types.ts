@@ -1,5 +1,5 @@
 /**
- * @mezban/shared - types
+ * @branvelo/shared - types
  * Single source of truth for domain types, imported by apps/web and apps/api.
  */
 

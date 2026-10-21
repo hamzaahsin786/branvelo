@@ -1,4 +1,4 @@
-# Mezban — Implementation Plan (phased)
+# Branvelo — Implementation Plan (phased)
 
 > Broad phases, each shippable on its own. Phase 1 is the build target right now.
 > Stack: Next.js 14 + TypeScript + Tailwind frontend (Vercel) · Fastify + TypeScript API (Render) · shared contracts in packages/shared · Supabase (Postgres/Auth/Realtime/Storage).

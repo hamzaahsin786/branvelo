@@ -106,6 +106,6 @@ async function main() {
 
 main().catch((err) => {
   // eslint-disable-next-line no-console
-  console.error("[mezban-api] failed to start:", err);
+  console.error("[branvelo-api] failed to start:", err);
   process.exit(1);
 });

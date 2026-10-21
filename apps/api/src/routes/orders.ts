@@ -7,7 +7,7 @@ import {
   type MenuItem,
   type OrderItemSnapshot,
   type OrderPublic,
-} from "@mezban/shared";
+} from "@branvelo/shared";
 import { supabase } from "../lib/supabase";
 import { ORDER_RATE_LIMIT } from "../lib/rate-limit";
 

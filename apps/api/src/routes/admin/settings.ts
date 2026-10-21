@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { SettingsUpdateSchema } from "@mezban/shared";
+import { SettingsUpdateSchema } from "@branvelo/shared";
 import { supabase } from "../../lib/supabase";
 
 /** GET /api/admin/me - who am I (used by the web admin shell + login check). */

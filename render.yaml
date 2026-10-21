@@ -1,4 +1,4 @@
-# Render blueprint for the Mezban API (apps/api — Fastify)
+# Render blueprint for the Branvelo API (apps/api — Fastify)
 # Deploy via Render Dashboard → New → Blueprint → connect the mezban repo.
 # Then set the env vars below in the Render dashboard (all secrets stay there, never in git).
 

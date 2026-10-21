@@ -1,4 +1,4 @@
-# Mezban
+# Branvelo
 
 Multi-tenant restaurant ordering SaaS — every restaurant gets its own branded,
 Kababjees-style ordering website, plus an admin dashboard to run it. Pakistan-first:

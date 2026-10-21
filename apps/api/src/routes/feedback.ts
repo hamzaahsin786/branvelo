@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { FeedbackSchema } from "@mezban/shared";
+import { FeedbackSchema } from "@branvelo/shared";
 import { supabase } from "../lib/supabase";
 import { FEEDBACK_RATE_LIMIT } from "../lib/rate-limit";
 

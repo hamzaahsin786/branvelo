@@ -1,6 +1,6 @@
-# Mezban — System Design v1
+# Branvelo — System Design v1
 
-> Working title for the platform ("mezban" = host). Renameable at any time.
+> Renamed 2026-10-21 from Mezban to Branvelo for global sale.
 > Status: design approved as the build blueprint. Last updated 2026-10-16.
 
 ## 1. Vision
@@ -95,7 +95,7 @@ Kababjees-inspired, reskinned per restaurant brand:
 
 - **One database, `tenant_id` on every tenant row.** App layer always scopes by tenant;
   Supabase Row Level Security enforces it at the DB too.
-- **Tenant resolution** (middleware): subdomain `usama.mezban.pk` → path `/t/usama-burgers`
+- **Tenant resolution** (middleware): subdomain `usama.branvelo.com` → path `/t/usama-burgers`
   → fallback default tenant (dev). Custom domains later via Vercel.
 - **Theming**: per-tenant brand tokens (primary/accent colors, logo, fonts, banner art)
   stored in DB → emitted as CSS variables. One codebase, unlimited skins.

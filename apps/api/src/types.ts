@@ -1,4 +1,4 @@
-import type { TenantUser } from "@mezban/shared";
+import type { TenantUser } from "@branvelo/shared";
 import type { ResolvedTenant } from "./lib/tenant";
 
 declare module "fastify" {

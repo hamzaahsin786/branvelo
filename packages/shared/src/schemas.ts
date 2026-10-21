@@ -1,5 +1,5 @@
 /**
- * @mezban/shared - Zod validation schemas.
+ * @branvelo/shared - Zod validation schemas.
  * Used by the Fastify API for every write; the Next.js frontend may reuse
  * them for client-side pre-validation. One definition, both stacks.
  */

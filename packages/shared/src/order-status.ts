@@ -1,5 +1,5 @@
 /**
- * @mezban/shared - order state machine.
+ * @branvelo/shared - order state machine.
  * placed → confirmed → preparing → ready → dispatched → delivered
  * (cancelled / refunded branch off from any non-terminal state)
  */
