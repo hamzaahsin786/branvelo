@@ -47,3 +47,38 @@ body {
   background-size: 28px 12px;
   background-repeat: repeat-x;
 }
+
+/* Branvelo platform decorations: gentle float for brand chunks
+   (logo streaks, smile arcs, rings) scattered in section backgrounds. */
+@keyframes bv-float {
+  from {
+    transform: translateY(0) rotate(var(--bv-rot, 0deg));
+  }
+  to {
+    transform: translateY(-12px) rotate(var(--bv-rot, 0deg));
+  }
+}
+@keyframes bv-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 26px 26px;
+  }
+}
+.bv-float {
+  animation: bv-float 6s ease-in-out infinite alternate;
+}
+.bv-float-slow {
+  animation: bv-float 9s ease-in-out infinite alternate;
+}
+.bv-dots-drift {
+  animation: bv-drift 14s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bv-float,
+  .bv-float-slow,
+  .bv-dots-drift {
+    animation: none;
+  }
+}

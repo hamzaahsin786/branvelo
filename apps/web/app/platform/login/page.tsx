@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { DotGrid, SmileArc } from "@/components/platform/Backdrop";
 
 const FIELD =
   "w-full rounded-xl border border-[#D9D6F5] bg-white px-4 py-3 text-[15px] font-semibold text-[#17143A] outline-none transition focus:border-[#3B34C4] focus:ring-2 focus:ring-[#3B34C4]/20";
@@ -19,8 +20,10 @@ export default function LoginPage() {
   }
 
   return (
-    <section className="bg-gradient-to-b from-[#F4F2FF] to-white py-12 lg:py-20">
-      <div className="mx-auto max-w-md px-4 sm:px-6">
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#F4F2FF] to-white py-12 lg:py-20">
+      <DotGrid className="left-[-40px] top-[-20px] h-[220px] w-[320px]" drift />
+      <SmileArc className="bottom-[24px] right-[5%] hidden lg:block" width={230} opacity={0.12} />
+      <div className="relative mx-auto max-w-md px-4 sm:px-6">
         <div className="text-center">
           <h1 className="text-3xl font-black tracking-tight text-[#17143A]">
             Restaurant sign in
