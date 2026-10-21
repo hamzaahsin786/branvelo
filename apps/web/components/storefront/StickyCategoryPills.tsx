@@ -1,6 +1,6 @@
 "use client";
 
-import type { Category } from "@mezban/shared";
+import type { Category } from "@branvelo/shared";
 
 interface Props {
   categories: Category[];

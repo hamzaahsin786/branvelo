@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Category, MenuItem } from "@mezban/shared";
-import { formatRs } from "@mezban/shared";
+import type { Category, MenuItem } from "@branvelo/shared";
+import { formatRs } from "@branvelo/shared";
 import { useAuthedApi } from "@/lib/use-authed-api";
 
 interface Props {

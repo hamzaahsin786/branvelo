@@ -1,5 +1,5 @@
-import type { Tenant } from "@mezban/shared";
-import { hoursSummary, isOpenNow } from "@mezban/shared";
+import type { Tenant } from "@branvelo/shared";
+import { hoursSummary, isOpenNow } from "@branvelo/shared";
 import { ClockIcon, PhoneIcon } from "./icons";
 
 /** Dark photographic-style hero banner (CSS gradient; photos come later). */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Tenant } from "@mezban/shared";
+import type { Tenant } from "@branvelo/shared";
 import { useCart } from "@/lib/cart";
 import {
   CartIcon,
@@ -129,7 +129,7 @@ export function PillHeader({ tenant, locationLabel, onLocationOpen }: Props) {
               )}
             </nav>
             <div className="mt-auto border-t p-4 text-center text-xs text-neutral-400">
-              Powered by Mezban
+              Powered by Branvelo
             </div>
           </aside>
         </div>

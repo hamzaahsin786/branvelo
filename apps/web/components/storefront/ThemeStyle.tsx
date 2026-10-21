@@ -1,4 +1,4 @@
-import type { Theme } from "@mezban/shared";
+import type { Theme } from "@branvelo/shared";
 
 /** Emits per-tenant brand tokens as CSS variables (one codebase, unlimited skins). */
 export function ThemeStyle({ theme }: { theme: Theme }) {

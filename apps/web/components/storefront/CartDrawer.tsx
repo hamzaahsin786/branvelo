@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { DeliveryZone, DinerLocation, Tenant } from "@mezban/shared";
-import { formatRs } from "@mezban/shared";
+import type { DeliveryZone, DinerLocation, Tenant } from "@branvelo/shared";
+import { formatRs } from "@branvelo/shared";
 import { useCart } from "@/lib/cart";
 import { useTenantSlug } from "@/lib/tenant-context";
 import { apiFetch } from "@/lib/api";

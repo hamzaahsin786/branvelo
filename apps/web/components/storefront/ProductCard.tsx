@@ -1,7 +1,7 @@
 "use client";
 
-import type { MenuItem } from "@mezban/shared";
-import { formatRs } from "@mezban/shared";
+import type { MenuItem } from "@branvelo/shared";
+import { formatRs } from "@branvelo/shared";
 import { PlusIcon } from "./icons";
 
 interface Props {

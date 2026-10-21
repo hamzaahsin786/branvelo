@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { OrderPublic, OrderStatus } from "@mezban/shared";
+import type { OrderPublic, OrderStatus } from "@branvelo/shared";
 import {
   STATUS_FLOW,
   STATUS_LABELS,
   TERMINAL_STATUSES,
   formatRs,
-} from "@mezban/shared";
+} from "@branvelo/shared";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 import { apiFetch } from "@/lib/api";
 import { useTenantSlug } from "@/lib/tenant-context";
@@ -174,7 +174,7 @@ export function TrackClient({ order: initial, themePrimary }: Props) {
       </div>
 
       <p className="mt-6 text-center text-xs text-neutral-400">
-        Live updates · Powered by Mezban
+        Live updates · Powered by Branvelo
       </p>
     </div>
   );

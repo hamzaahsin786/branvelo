@@ -3,7 +3,7 @@
  * The x-tenant-slug header is always sent (middleware sets it on page
  * requests; client fetches send it explicitly since the API is cross-origin).
  */
-import type { CatalogData, OrderPublic } from "@mezban/shared";
+import type { CatalogData, OrderPublic } from "@branvelo/shared";
 
 export function apiBase(): string {
   const base =

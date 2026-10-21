@@ -1,6 +1,6 @@
 "use client";
 
-import type { Category, MenuItem } from "@mezban/shared";
+import type { Category, MenuItem } from "@branvelo/shared";
 import { ProductCard } from "./ProductCard";
 
 interface Props {

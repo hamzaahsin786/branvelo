@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@mezban/shared": "*",
+    "@branvelo/shared": "*",
     "@supabase/ssr": "^0.4.0",
     "@supabase/supabase-js": "^2.45.0",
     "next": "^14.2.0",
@@ -16,7 +16,7 @@
     "tailwindcss": "^3.4.4",
     "typescript": "^5.5.0"
   },
-  "name": "mezban-web",
+  "name": "branvelo-web",
   "private": true,
   "scripts": {
     "build": "next build",

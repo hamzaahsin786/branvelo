@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { DeliveryZone } from "@mezban/shared";
-import { formatRs, hoursSummary } from "@mezban/shared";
+import type { DeliveryZone } from "@branvelo/shared";
+import { formatRs, hoursSummary } from "@branvelo/shared";
 import { useAuthedApi } from "@/lib/use-authed-api";
 
 interface Settings {

@@ -5,13 +5,13 @@ import type {
   OrderRow,
   OrderStatus,
   OrderStatusHistoryRow,
-} from "@mezban/shared";
+} from "@branvelo/shared";
 import {
   STATUS_LABELS,
   displayPkPhone,
   formatRs,
   nextStatuses,
-} from "@mezban/shared";
+} from "@branvelo/shared";
 import { useAuthedApi } from "@/lib/use-authed-api";
 
 interface Props {

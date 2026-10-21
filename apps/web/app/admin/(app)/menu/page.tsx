@@ -1,4 +1,4 @@
-import type { Category, MenuItem } from "@mezban/shared";
+import type { Category, MenuItem } from "@branvelo/shared";
 import { adminApiGet } from "@/lib/admin-server";
 import { MenuManager } from "@/components/admin/MenuManager";
 

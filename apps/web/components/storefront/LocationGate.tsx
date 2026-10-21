@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { DeliveryZone, DinerLocation } from "@mezban/shared";
-import { formatRs } from "@mezban/shared";
+import type { DeliveryZone, DinerLocation } from "@branvelo/shared";
+import { formatRs } from "@branvelo/shared";
 import { XIcon } from "./icons";
 
 interface Props {

@@ -3,7 +3,7 @@
     "@fastify/cors": "^8.5.0",
     "@fastify/helmet": "^11.1.1",
     "@fastify/rate-limit": "^9.1.0",
-    "@mezban/shared": "*",
+    "@branvelo/shared": "*",
     "@supabase/supabase-js": "^2.45.0",
     "fastify": "^4.28.1",
     "ws": "^8.18.0"
@@ -14,7 +14,7 @@
     "typescript": "^5.5.0",
     "@types/ws": "^8.5.10"
   },
-  "name": "@mezban/api",
+  "name": "@branvelo/api",
   "private": true,
   "scripts": {
     "build": "tsc",

@@ -6,7 +6,7 @@ import type {
   Category,
   DinerLocation,
   MenuItem,
-} from "@mezban/shared";
+} from "@branvelo/shared";
 import { CartProvider, useCart } from "@/lib/cart";
 import { ThemeStyle } from "./ThemeStyle";
 import { AwningStripe } from "./AwningStripe";
@@ -24,7 +24,7 @@ import { Footer } from "./Footer";
 import { CartIcon } from "./icons";
 
 function locationStorageKey(slug: string) {
-  return `mezban-location-${slug}`;
+  return `branvelo-location-${slug}`;
 }
 
 function StorefrontInner({ catalog }: { catalog: CatalogData }) {

@@ -1,4 +1,4 @@
-import type { DeliveryZone } from "@mezban/shared";
+import type { DeliveryZone } from "@branvelo/shared";
 import { adminApiGet } from "@/lib/admin-server";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 

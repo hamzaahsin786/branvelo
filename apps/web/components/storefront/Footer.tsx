@@ -1,8 +1,8 @@
-import type { Tenant } from "@mezban/shared";
-import { displayPkPhone, hoursSummary } from "@mezban/shared";
+import type { Tenant } from "@branvelo/shared";
+import { displayPkPhone, hoursSummary } from "@branvelo/shared";
 import { ClockIcon, PhoneIcon, PinIcon } from "./icons";
 
-/** Footer: contact, hours, map link, help - plus the Mezban bottom bar. */
+/** Footer: contact, hours, map link, help - plus the Branvelo bottom bar. */
 export function Footer({ tenant }: { tenant: Tenant }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     tenant.address || tenant.name
@@ -64,7 +64,7 @@ export function Footer({ tenant }: { tenant: Tenant }) {
         </div>
       </div>
       <div className="bg-[var(--brand)] px-4 py-3 text-center text-xs font-bold uppercase tracking-widest text-white">
-        Powered by Mezban
+        Powered by Branvelo
       </div>
     </footer>
   );

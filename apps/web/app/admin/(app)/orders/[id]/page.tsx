@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import type { OrderRow, OrderStatusHistoryRow } from "@mezban/shared";
+import type { OrderRow, OrderStatusHistoryRow } from "@branvelo/shared";
 import { adminApiGet } from "@/lib/admin-server";
 import { OrderDetail } from "@/components/admin/OrderDetail";
 

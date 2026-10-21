@@ -1,5 +1,5 @@
 import type { FastifyRequest } from "fastify";
-import type { TenantUser } from "@mezban/shared";
+import type { TenantUser } from "@branvelo/shared";
 import { supabase } from "./supabase";
 
 export interface AdminCheck {

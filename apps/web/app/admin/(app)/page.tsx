@@ -1,4 +1,4 @@
-import type { OrderRow } from "@mezban/shared";
+import type { OrderRow } from "@branvelo/shared";
 import { adminApiGet, requireAdminPage } from "@/lib/admin-server";
 import { OrderFeed } from "@/components/admin/OrderFeed";
 

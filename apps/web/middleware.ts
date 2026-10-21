@@ -4,7 +4,7 @@ const TENANT_HEADER = "x-tenant-slug";
 
 /**
  * Tenant resolution order:
- *  1. Subdomain — usama.mezban.pk / usama.localhost
+ *  1. Subdomain — usama.branvelo.com / usama.localhost
  *  2. Path prefix — /t/<slug>/...
  *  3. DEFAULT_TENANT_SLUG env (dev fallback, 'usama-burgers')
  *
@@ -18,13 +18,13 @@ export function middleware(req: NextRequest) {
 
   let slug: string | null = null;
 
-  // 1) subdomain: *.mezban.pk and *.localhost
+  // 1) subdomain: *.branvelo.com and *.localhost
   if (host && host !== "localhost" && host !== "127.0.0.1") {
     if (host.endsWith(".localhost")) {
       const sub = host.slice(0, -".localhost".length);
       if (sub && sub !== "www") slug = sub;
-    } else if (host.endsWith(".mezban.pk")) {
-      const sub = host.slice(0, -".mezban.pk".length);
+    } else if (host.endsWith(".branvelo.com")) {
+      const sub = host.slice(0, -".branvelo.com".length);
       if (sub && sub !== "www" && !sub.includes(".")) slug = sub;
     }
   }

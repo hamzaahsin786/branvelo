@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { MenuItem } from "@mezban/shared";
+import type { MenuItem } from "@branvelo/shared";
 
 export interface CartLine {
   item: MenuItem;
@@ -31,7 +31,7 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | null>(null);
 
 function storageKey(tenantSlug: string) {
-  return `mezban-cart-${tenantSlug}`;
+  return `branvelo-cart-${tenantSlug}`;
 }
 
 export function CartProvider({

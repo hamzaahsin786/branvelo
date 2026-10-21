@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { OrderRow, OrderStatus } from "@mezban/shared";
-import { STATUS_LABELS, formatRs } from "@mezban/shared";
+import type { OrderRow, OrderStatus } from "@branvelo/shared";
+import { STATUS_LABELS, formatRs } from "@branvelo/shared";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 
 function beep() {
