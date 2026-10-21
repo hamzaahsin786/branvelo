@@ -1,0 +1,68 @@
+# Branvelo v2 — local development stack (Phase 0).
+# One command boots everything on your machine:  docker compose up --build
+# The SAME file deploys to the production server later (Phase 8).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-branvelo}
+      POSTGRES_USER: ${POSTGRES_USER:-branvelo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-branvelo-dev-password}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-branvelo}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build: ./server
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./server:/app
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-branvelo}
+      POSTGRES_USER: ${POSTGRES_USER:-branvelo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-branvelo-dev-password}
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_DEBUG: "1"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages/shared:/app/packages/shared
+      - /app/node_modules
+      - /app/apps/web/node_modules
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      DEFAULT_TENANT_SLUG: ${DEFAULT_TENANT_SLUG:-usama-burgers}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

@@ -1,0 +1,15 @@
+# Local-dev image for the Next.js frontend, built from the REPO ROOT context
+# (npm workspaces: apps/web depends on packages/shared, so the whole
+# workspace is installed, not just this folder).
+# Used only by docker-compose.yml for local development.
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/shared/package.json ./packages/shared/
+RUN npm install
+COPY apps/web ./apps/web
+COPY packages/shared ./packages/shared
+EXPOSE 3000
+WORKDIR /app/apps/web
+CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0"]
