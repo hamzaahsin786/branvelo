@@ -10,16 +10,18 @@ import {
 
 /**
  * Display currency for the Branvelo platform site.
- * Detected automatically from the visitor's browser (language region,
- * then timezone), remembered in localStorage, and switchable in the
- * header. Billing itself is in PKR for now; other currencies are
- * display conversions at approximate rates, noted on the pricing section.
+ * Detected from the country the visitor connects from (IP geolocation),
+ * with browser language/timezone as offline fallbacks. A manual choice in
+ * the header is remembered in localStorage and always wins. Billing
+ * itself is in PKR for now; other currencies are display conversions at
+ * approximate rates, noted on the pricing section.
  */
 export const BASE_PRICE_PKR = 2499;
 
 export const CURRENCIES = [
   { code: "PKR", label: "PKR · Pakistan" },
   { code: "USD", label: "USD · United States" },
+  { code: "CAD", label: "CAD · Canada" },
   { code: "EUR", label: "EUR · Eurozone" },
   { code: "GBP", label: "GBP · United Kingdom" },
   { code: "AED", label: "AED · UAE" },
@@ -33,6 +35,7 @@ export type CurrencyCode = (typeof CURRENCIES)[number]["code"];
 const RATES: Record<CurrencyCode, number> = {
   PKR: 1,
   USD: 0.0036,
+  CAD: 0.0026,
   EUR: 0.0033,
   GBP: 0.0028,
   AED: 0.0132,
@@ -43,6 +46,7 @@ const RATES: Record<CurrencyCode, number> = {
 const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
   PK: "PKR",
   US: "USD",
+  CA: "CAD",
   GB: "GBP",
   AE: "AED",
   SA: "SAR",
@@ -64,9 +68,16 @@ const TIMEZONE_TO_CURRENCY: Record<string, CurrencyCode> = {
   "Europe/Rome": "EUR",
   "Europe/Amsterdam": "EUR",
   "Europe/Dublin": "EUR",
+  "America/Toronto": "CAD",
+  "America/Vancouver": "CAD",
+  "America/Winnipeg": "CAD",
+  "America/Edmonton": "CAD",
+  "America/Halifax": "CAD",
+  "America/Montreal": "CAD",
+  "America/St_Johns": "CAD",
 };
 
-function detectCurrency(): CurrencyCode {
+function storedCurrency(): CurrencyCode | null {
   try {
     const stored = window.localStorage.getItem("branvelo-currency");
     if (stored && CURRENCIES.some((c) => c.code === stored)) {
@@ -75,6 +86,11 @@ function detectCurrency(): CurrencyCode {
   } catch {
     /* storage unavailable */
   }
+  return null;
+}
+
+/** Offline fallback signals: browser language region, then timezone. */
+function detectFromBrowser(): CurrencyCode {
   const region = (navigator.language || "").split("-")[1]?.toUpperCase();
   if (region && COUNTRY_TO_CURRENCY[region]) return COUNTRY_TO_CURRENCY[region];
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -82,6 +98,47 @@ function detectCurrency(): CurrencyCode {
   if (tz?.startsWith("America/")) return "USD";
   if (tz?.startsWith("Europe/")) return "EUR";
   return "PKR";
+}
+
+/**
+ * Primary signal: the country the visitor connects FROM (IP geolocation).
+ * This is what makes the currency follow travel and VPNs. Two free
+ * no-key sources, then null so the caller keeps the browser-based guess.
+ */
+async function detectFromIp(): Promise<CurrencyCode | null> {
+  try {
+    const res = await fetch("https://ipapi.co/json/", {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const cur = data?.currency as string | undefined;
+      if (cur && CURRENCIES.some((c) => c.code === cur)) {
+        return cur as CurrencyCode;
+      }
+      const country = data?.country_code as string | undefined;
+      if (country && COUNTRY_TO_CURRENCY[country]) {
+        return COUNTRY_TO_CURRENCY[country];
+      }
+    }
+  } catch {
+    /* fall through to the second source */
+  }
+  try {
+    const res = await fetch("https://api.country.is/", {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const country = data?.country as string | undefined;
+      if (country && COUNTRY_TO_CURRENCY[country]) {
+        return COUNTRY_TO_CURRENCY[country];
+      }
+    }
+  } catch {
+    /* keep the browser-based guess */
+  }
+  return null;
 }
 
 type CurrencyCtx = {
@@ -120,7 +177,22 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<CurrencyCode>("PKR");
 
   useEffect(() => {
-    setCurrencyState(detectCurrency());
+    // A manual choice in the header always wins and is never overridden.
+    const manual = storedCurrency();
+    if (manual) {
+      setCurrencyState(manual);
+      return;
+    }
+    // Instant best guess from the browser, then the IP-based country
+    // (the connection country) refines it a moment later.
+    setCurrencyState(detectFromBrowser());
+    let cancelled = false;
+    void detectFromIp().then((code) => {
+      if (!cancelled && code) setCurrencyState(code);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function setCurrency(c: CurrencyCode) {
