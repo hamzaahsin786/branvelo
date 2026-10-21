@@ -76,7 +76,7 @@ export default function SignupPage() {
               required
               value={restaurantName}
               onChange={(e) => setRestaurantName(e.target.value)}
-              placeholder="e.g. Usama Burgers"
+              placeholder="Your restaurant's name"
               className={FIELD}
             />
           </div>

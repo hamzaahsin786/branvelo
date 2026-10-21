@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CommissionCalculator from "@/components/platform/CommissionCalculator";
+import StorefrontMock from "@/components/platform/StorefrontMock";
+import { PriceAmount, PriceInline } from "@/components/platform/currency";
 import {
   BrandRing,
   DotGrid,
@@ -10,17 +12,11 @@ import {
   SpeedStreaks,
 } from "@/components/platform/Backdrop";
 
-// PLACEHOLDER launch price (PKR/month) - Muhammad to confirm the final number.
-// The calculator and the pricing section both read this one constant.
-const PRICE_PKR = 2499;
-
 export const metadata: Metadata = {
   title: "Branvelo - Your restaurant. Your orders. Zero commission.",
   description:
     "Your own ordering website and dashboard for one flat monthly fee. No commission on your orders, ever.",
 };
-
-const PKR = new Intl.NumberFormat("en-PK");
 
 function SectionHeading({
   kicker,
@@ -163,7 +159,13 @@ const PRODUCTS = [
 const FAQS = [
   {
     q: "How much does Branvelo cost, really?",
-    a: `One flat fee of Rs ${PKR.format(PRICE_PKR)} per month. No commission, no percentage of sales, no setup fee, no per-order charges. 100 orders or 10,000 orders, the fee is the same.`,
+    a: (
+      <>
+        One flat fee of <PriceInline /> per month. No commission, no
+        percentage of sales, no setup fee, no per-order charges. 100 orders
+        or 10,000 orders, the fee is the same.
+      </>
+    ),
   },
   {
     q: "Do I need any technical knowledge?",
@@ -224,7 +226,7 @@ export default function PlatformHome() {
                 href="/"
                 className="rounded-full border-2 border-[#2C24A3] px-7 py-3.5 text-[16px] font-extrabold text-[#2C24A3] transition hover:bg-[#F1EFFF]"
               >
-                See a live storefront
+                See a sample storefront
               </Link>
             </div>
             <p className="mt-4 text-sm font-bold text-[#6B6794]">
@@ -232,59 +234,7 @@ export default function PlatformHome() {
             </p>
           </div>
 
-          {/* Storefront mock */}
-          <div className="relative mx-auto w-full max-w-[440px]">
-            <SpeedStreaks className="left-[-38px] top-[38%] hidden sm:block" width={58} />
-            <div className="relative rounded-[28px] border border-[#E7E4FA] bg-white p-4 shadow-2xl shadow-[#2C24A3]/10">
-              <div className="flex items-center gap-3 border-b border-[#F0EEFC] pb-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#F59E0B] text-lg font-black text-white">
-                  U
-                </div>
-                <div>
-                  <p className="text-[16px] font-black leading-tight">Usama Burgers</p>
-                  <p className="text-[13px] font-bold text-[#6B6794]">
-                    Johar Town, Lahore · Open now
-                  </p>
-                </div>
-                <span className="ml-auto rounded-full bg-[#E9F9EE] px-2.5 py-1 text-[12px] font-black text-[#15803D]">
-                  LIVE DEMO
-                </span>
-              </div>
-              {[
-                { n: "Zinger Burger", p: 550, tag: "Bestseller" },
-                { n: "Loaded Fries", p: 380, tag: "Popular" },
-                { n: "Chicken Shawarma", p: 320, tag: "New" },
-              ].map((item) => (
-                <div
-                  key={item.n}
-                  className="flex items-center justify-between border-b border-[#F7F6FF] py-3 last:border-0"
-                >
-                  <div>
-                    <p className="text-[15px] font-extrabold">{item.n}</p>
-                    <p className="text-[12px] font-bold text-[#F59E0B]">{item.tag}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[15px] font-black">Rs {item.p}</span>
-                    <span className="rounded-full bg-[#2C24A3] px-3 py-1 text-[13px] font-extrabold text-white">
-                      Add
-                    </span>
-                  </div>
-                </div>
-              ))}
-              <div className="mt-3 rounded-2xl bg-[#F7F6FF] px-4 py-3 text-center text-[13px] font-bold text-[#4A4570]">
-                A real restaurant running on Branvelo today
-              </div>
-            </div>
-            <div className="bv-float-slow absolute -right-3 -top-4 rotate-2 rounded-2xl bg-[#17143A] px-4 py-3 text-white shadow-xl sm:-right-6">
-              <p className="text-[11px] font-black uppercase tracking-wide text-[#F59E0B]">
-                New order
-              </p>
-              <p className="text-sm font-extrabold">2x Zinger · Rs 1,450</p>
-              <p className="text-[12px] font-bold text-white/60">
-                Commission paid: Rs 0
-              </p>
-            </div>
-          </div>
+          <StorefrontMock />
         </div>
       </section>
 
@@ -298,15 +248,15 @@ export default function PlatformHome() {
             </p>
           </div>
           <div>
-            <p className="text-2xl font-black text-[#17143A]">1 live pilot</p>
+            <p className="text-2xl font-black text-[#17143A]">1 flat fee</p>
             <p className="mt-1 text-sm font-bold text-[#6B6794]">
-              Usama Burgers, Johar Town, taking real orders now
+              no tiers, no percentages, no surprises in month two
             </p>
           </div>
           <div>
-            <p className="text-2xl font-black text-[#17143A]">Now onboarding</p>
+            <p className="text-2xl font-black text-[#17143A]">Same day</p>
             <p className="mt-1 text-sm font-bold text-[#6B6794]">
-              our first Lahore restaurants, set up personally by our team
+              from signup to taking orders, no developer needed
             </p>
           </div>
         </div>
@@ -323,7 +273,7 @@ export default function PlatformHome() {
             sub="Your numbers. Thirty seconds. Prepare to be annoyed."
           />
           <div className="mt-10">
-            <CommissionCalculator pricePkr={PRICE_PKR} />
+            <CommissionCalculator />
           </div>
         </div>
       </section>
@@ -424,20 +374,20 @@ export default function PlatformHome() {
             <SmileArc className="bottom-[10px] right-[6%]" width={260} opacity={0.14} />
             <div className="relative">
               <p className="text-[13px] font-black uppercase tracking-[0.14em] text-[#F59E0B]">
-                Live demo
+                Sample storefront
               </p>
               <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
                 Do not take our word for it. Place a test order.
               </h2>
               <p className="mt-3 max-w-lg text-[16px] font-semibold leading-relaxed text-white/75">
-                Usama Burgers runs on Branvelo. Open the real storefront and
-                see exactly what your customers will get.
+                A working sample storefront, the same pages your customers
+                will use. Browse the menu, add items, and check out.
               </p>
               <Link
                 href="/"
                 className="mt-6 inline-block rounded-full bg-[#F59E0B] px-7 py-3.5 text-[16px] font-black text-[#17143A] transition hover:bg-[#FFB224]"
               >
-                Open the live storefront
+                Open the sample storefront
               </Link>
             </div>
             <div className="relative rounded-3xl bg-white/10 p-6">
@@ -471,10 +421,7 @@ export default function PlatformHome() {
               Branvelo
             </p>
             <p className="mt-3 text-center">
-              <span className="text-5xl font-black tracking-tight text-[#17143A]">
-                Rs {PKR.format(PRICE_PKR)}
-              </span>
-              <span className="text-lg font-bold text-[#6B6794]"> /month</span>
+              <PriceAmount />
             </p>
             <p className="mt-2 text-center text-sm font-bold text-[#6B6794]">
               Launch pricing. Every feature included.

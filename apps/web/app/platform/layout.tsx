@@ -2,6 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { Nunito } from "next/font/google";
 import type { ReactNode } from "react";
+import {
+  CurrencyProvider,
+  CurrencySelector,
+} from "@/components/platform/currency";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -18,6 +22,7 @@ const NAV = [
 
 export default function PlatformLayout({ children }: { children: ReactNode }) {
   return (
+    <CurrencyProvider>
     <div className={`${nunito.className} min-h-screen bg-white text-[#17143A]`}>
       <header className="sticky top-0 z-40 border-b border-[#ECEAF9] bg-white/90 backdrop-blur">
         <div className="mx-auto flex h-[72px] max-w-6xl items-center gap-6 px-4 sm:px-6">
@@ -42,6 +47,7 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3">
+            <CurrencySelector />
             <Link
               href="/platform/login"
               className="hidden rounded-full px-4 py-2 text-[15px] font-extrabold text-[#2C24A3] transition hover:bg-[#F1EFFF] sm:block"
@@ -85,7 +91,7 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
               <li><Link href="/platform#products" className="hover:text-white">Ordering website</Link></li>
               <li><Link href="/platform#products" className="hover:text-white">Admin dashboard</Link></li>
               <li><Link href="/platform#products" className="hover:text-white">Live order tracking</Link></li>
-              <li><Link href="/" className="hover:text-white">Live demo</Link></li>
+              <li><Link href="/" className="hover:text-white">Sample storefront</Link></li>
             </ul>
           </div>
           <div>
@@ -116,5 +122,6 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
         </div>
       </footer>
     </div>
+    </CurrencyProvider>
   );
 }

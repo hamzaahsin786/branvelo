@@ -1,15 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-
-const PKR = new Intl.NumberFormat("en-PK");
+import { useCurrency } from "@/components/platform/currency";
 
 /**
  * Interactive commission calculator: the visitor's monthly marketplace
- * commission vs Branvelo's flat fee. pricePkr comes from the page so the
- * pricing section and the calculator can never disagree.
+ * commission vs Branvelo's flat fee. All amounts display in the visitor's
+ * currency (see currency.tsx); the fee is the PKR price converted.
  */
-export default function CommissionCalculator({ pricePkr }: { pricePkr: number }) {
+export default function CommissionCalculator() {
+  const { fee, format, currency } = useCurrency();
   const [monthlyOrders, setMonthlyOrders] = useState(900);
   const [avgOrder, setAvgOrder] = useState(650);
   const [commissionPct, setCommissionPct] = useState(25);
@@ -23,9 +23,11 @@ export default function CommissionCalculator({ pricePkr }: { pricePkr: number })
         monthlySales: sales,
         monthlyCommission: commission,
         yearlyCommission: yearly,
-        yearlySaving: yearly - pricePkr * 12,
+        yearlySaving: yearly - fee * 12,
       };
-    }, [monthlyOrders, avgOrder, commissionPct, pricePkr]);
+    }, [monthlyOrders, avgOrder, commissionPct, fee]);
+
+  const NUM = new Intl.NumberFormat("en-PK");
 
   const field =
     "w-full rounded-xl border border-[#D9D6F5] bg-white px-3.5 py-2.5 text-[15px] font-bold text-[#17143A] outline-none focus:border-[#3B34C4]";
@@ -37,7 +39,7 @@ export default function CommissionCalculator({ pricePkr }: { pricePkr: number })
         <div className="space-y-5">
           <div>
             <label className={label} htmlFor="cc-orders">
-              Delivery orders per month: {PKR.format(monthlyOrders)}
+              Delivery orders per month: {NUM.format(monthlyOrders)}
             </label>
             <input
               id="cc-orders"
@@ -52,7 +54,7 @@ export default function CommissionCalculator({ pricePkr }: { pricePkr: number })
           </div>
           <div>
             <label className={label} htmlFor="cc-avg">
-              Average order value (Rs)
+              Average order value ({currency})
             </label>
             <input
               id="cc-avg"
@@ -88,7 +90,7 @@ export default function CommissionCalculator({ pricePkr }: { pricePkr: number })
           <p className="rounded-xl bg-[#F7F6FF] px-4 py-3 text-sm font-semibold leading-relaxed text-[#4A4570]">
             Your monthly delivery sales:{" "}
             <span className="font-black text-[#17143A]">
-              Rs {PKR.format(monthlySales)}
+              {format(monthlySales)}
             </span>
           </p>
         </div>
@@ -100,11 +102,11 @@ export default function CommissionCalculator({ pricePkr }: { pricePkr: number })
             You pay the marketplaces
           </p>
           <p className="mt-1.5 text-4xl font-black tracking-tight">
-            Rs {PKR.format(monthlyCommission)}
+            {format(monthlyCommission)}
             <span className="text-lg font-bold text-white/60"> /month</span>
           </p>
           <p className="mt-1 text-[15px] font-semibold text-white/60">
-            Rs {PKR.format(yearlyCommission)} every year, gone.
+            {format(yearlyCommission)} every year, gone.
           </p>
 
           <div className="my-6 border-t border-white/10" />
@@ -113,12 +115,12 @@ export default function CommissionCalculator({ pricePkr }: { pricePkr: number })
             With Branvelo you pay
           </p>
           <p className="mt-1.5 text-4xl font-black tracking-tight">
-            Rs {PKR.format(pricePkr)}
+            {format(fee)}
             <span className="text-lg font-bold text-white/60"> /month, flat</span>
           </p>
         </div>
         <p className="mt-6 rounded-2xl bg-[#2C24A3] px-4 py-3.5 text-[15px] font-extrabold leading-relaxed">
-          You keep an extra Rs {PKR.format(Math.max(yearlySaving, 0))} every
+          You keep an extra {format(Math.max(yearlySaving, 0))} every
           year. That is a rider's salary, a new oven, or your second branch.
         </p>
       </div>
