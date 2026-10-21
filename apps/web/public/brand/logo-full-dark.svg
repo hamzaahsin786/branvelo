@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 356 100">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#453BD6"/>
+      <stop offset="1" stop-color="#241D6E"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="96" height="96" rx="24" fill="url(#bg)"/>
+  <path d="M15 38 H27 M12 50 H27 M15 62 H27" stroke="#F59E0B" stroke-width="6.5" stroke-linecap="round"/>
+  <path d="M38 25 V75 M38 25 H54 A12.5 12.5 0 0 1 54 50 H38 M38 50 H58 A12.5 12.5 0 0 1 58 75 H38" stroke="#FFFFFF" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="114" y="64" font-family="Nunito, 'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="43" letter-spacing="-1"><tspan fill="#FFFFFF">bran</tspan><tspan fill="#9D97F5">vel</tspan><tspan fill="#F59E0B">o</tspan></text>
+  <path d="M226 78 Q282 93 334 72" stroke="#F59E0B" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M325 66 L337 71 L329 80" stroke="#F59E0B" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
