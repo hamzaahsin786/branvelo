@@ -102,41 +102,58 @@ function detectFromBrowser(): CurrencyCode {
 
 /**
  * Primary signal: the country the visitor connects FROM (IP geolocation).
- * This is what makes the currency follow travel and VPNs. Two free
- * no-key sources, then null so the caller keeps the browser-based guess.
+ * This is what makes the currency follow travel and VPNs. Several free
+ * no-key sources are tried in order, because shared VPN/datacenter IPs
+ * get rate-limited by individual providers (ipapi.co rate-limits free
+ * VPN exits, ipwho.is answered for the same IP). First success wins.
  */
-async function detectFromIp(): Promise<CurrencyCode | null> {
+async function fetchJson(url: string): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch("https://ipapi.co/json/", {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const cur = data?.currency as string | undefined;
-      if (cur && CURRENCIES.some((c) => c.code === cur)) {
-        return cur as CurrencyCode;
-      }
-      const country = data?.country_code as string | undefined;
-      if (country && COUNTRY_TO_CURRENCY[country]) {
-        return COUNTRY_TO_CURRENCY[country];
-      }
-    }
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) return (await res.json()) as Record<string, unknown>;
   } catch {
-    /* fall through to the second source */
+    /* try the next source */
   }
-  try {
-    const res = await fetch("https://api.country.is/", {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const country = data?.country as string | undefined;
-      if (country && COUNTRY_TO_CURRENCY[country]) {
-        return COUNTRY_TO_CURRENCY[country];
-      }
-    }
-  } catch {
-    /* keep the browser-based guess */
+  return null;
+}
+
+function pick(
+  currencyRaw: unknown,
+  countryRaw: unknown,
+): CurrencyCode | null {
+  if (
+    typeof currencyRaw === "string" &&
+    CURRENCIES.some((c) => c.code === currencyRaw)
+  ) {
+    return currencyRaw as CurrencyCode;
+  }
+  if (typeof countryRaw === "string" && COUNTRY_TO_CURRENCY[countryRaw]) {
+    return COUNTRY_TO_CURRENCY[countryRaw];
+  }
+  return null;
+}
+
+async function detectFromIp(): Promise<CurrencyCode | null> {
+  const ipwho = await fetchJson("https://ipwho.is/");
+  if (ipwho) {
+    const currencyObj = ipwho.currency as { code?: unknown } | undefined;
+    const hit = pick(currencyObj?.code, ipwho.country_code);
+    if (hit) return hit;
+  }
+  const ipapi = await fetchJson("https://ipapi.co/json/");
+  if (ipapi) {
+    const hit = pick(ipapi.currency, ipapi.country_code);
+    if (hit) return hit;
+  }
+  const countryIs = await fetchJson("https://api.country.is/");
+  if (countryIs) {
+    const hit = pick(undefined, countryIs.country);
+    if (hit) return hit;
+  }
+  const geojs = await fetchJson("https://get.geojs.io/v1/ip/country.json");
+  if (geojs) {
+    const hit = pick(undefined, geojs.country);
+    if (hit) return hit;
   }
   return null;
 }
@@ -144,6 +161,10 @@ async function detectFromIp(): Promise<CurrencyCode | null> {
 type CurrencyCtx = {
   currency: CurrencyCode;
   setCurrency: (c: CurrencyCode) => void;
+  /** True while the currency follows the detected country automatically. */
+  auto: boolean;
+  /** Switch back to automatic (by-country) detection. */
+  useAuto: () => void;
   /** Convert a PKR amount and format it in the active currency. */
   fromPkr: (amountPkr: number) => string;
   /** Format an amount that is already in the active currency. */
@@ -155,6 +176,8 @@ type CurrencyCtx = {
 const Ctx = createContext<CurrencyCtx>({
   currency: "PKR",
   setCurrency: () => {},
+  auto: true,
+  useAuto: () => {},
   fromPkr: (n) => `Rs ${Math.round(n).toLocaleString("en-PK")}`,
   format: (n) => `Rs ${Math.round(n).toLocaleString("en-PK")}`,
   fee: BASE_PRICE_PKR,
@@ -175,14 +198,9 @@ function formatIn(amount: number, code: CurrencyCode): string {
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<CurrencyCode>("PKR");
+  const [auto, setAuto] = useState(true);
 
-  useEffect(() => {
-    // A manual choice in the header always wins and is never overridden.
-    const manual = storedCurrency();
-    if (manual) {
-      setCurrencyState(manual);
-      return;
-    }
+  function runDetection() {
     // Instant best guess from the browser, then the IP-based country
     // (the connection country) refines it a moment later.
     setCurrencyState(detectFromBrowser());
@@ -193,10 +211,23 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
+  }
+
+  useEffect(() => {
+    // A manual choice in the header always wins and is never overridden.
+    const manual = storedCurrency();
+    if (manual) {
+      setCurrencyState(manual);
+      setAuto(false);
+      return;
+    }
+    return runDetection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function setCurrency(c: CurrencyCode) {
     setCurrencyState(c);
+    setAuto(false);
     try {
       window.localStorage.setItem("branvelo-currency", c);
     } catch {
@@ -204,9 +235,21 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  function useAuto() {
+    try {
+      window.localStorage.removeItem("branvelo-currency");
+    } catch {
+      /* storage unavailable */
+    }
+    setAuto(true);
+    runDetection();
+  }
+
   const value: CurrencyCtx = {
     currency,
     setCurrency,
+    auto,
+    useAuto,
     fromPkr: (n) => formatIn(n * RATES[currency], currency),
     format: (n) => formatIn(n, currency),
     fee: Math.round(BASE_PRICE_PKR * RATES[currency]),
@@ -216,14 +259,18 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 }
 
 export function CurrencySelector() {
-  const { currency, setCurrency } = useCurrency();
+  const { currency, setCurrency, auto, useAuto } = useCurrency();
   return (
     <select
       aria-label="Display currency"
-      value={currency}
-      onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
+      value={auto ? "AUTO" : currency}
+      onChange={(e) => {
+        if (e.target.value === "AUTO") useAuto();
+        else setCurrency(e.target.value as CurrencyCode);
+      }}
       className="cursor-pointer rounded-full border border-[#DDD9FA] bg-white px-2.5 py-2 text-[13px] font-extrabold text-[#2C24A3] outline-none transition hover:bg-[#F1EFFF]"
     >
+      <option value="AUTO">Auto · by country</option>
       {CURRENCIES.map((c) => (
         <option key={c.code} value={c.code}>
           {c.label}
