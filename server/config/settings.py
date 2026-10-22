@@ -1,8 +1,10 @@
 """Branvelo v2 server settings.
 
-Phase 0: vanilla Django wired for the Docker Compose stack (PostgreSQL +
-Redis via env). django-tenants (schema-per-tenant) is installed as a
-dependency now and gets wired in Phase 2; see docs/04-db-design-v2.md.
+Multi-tenancy (Phase 2): django-tenants, one PostgreSQL schema per
+restaurant. SHARED_APPS live in the public schema (platform control
+layer); TENANT_APPS are synced into every restaurant schema. Which schema
+a request uses is decided by the hostname (django-tenants middleware,
+first in the chain). Spec: docs/04-db-design-v2.md.
 """
 import os
 from pathlib import Path
@@ -14,7 +16,10 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 # Local development only. Deployment phase tightens this to real domains.
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
-INSTALLED_APPS = [
+# --- django-tenants app split -------------------------------------------------
+SHARED_APPS = [
+    "django_tenants",  # must be first
+    "tenants_app",  # TENANT_MODEL lives here; shared by definition
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -24,7 +29,28 @@ INSTALLED_APPS = [
     "rest_framework",
 ]
 
+TENANT_APPS = [
+    # auth + contenttypes must exist inside tenant schemas too: staff
+    # logins are per-tenant auth users (see accounts.StaffUser).
+    "django.contrib.contenttypes",
+    "django.contrib.auth",
+    "accounts",
+    "catalog",
+    "ordering",
+]
+
+INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
+
+TENANT_MODEL = "tenants_app.Tenant"
+TENANT_DOMAIN_MODEL = "tenants_app.Domain"
+DATABASE_ROUTERS = ["django_tenants.routers.TenantSyncRouter"]
+# Tenant subdomains are minted under this suffix at provisioning time.
+PLATFORM_DOMAIN_SUFFIX = os.environ.get("PLATFORM_DOMAIN_SUFFIX", "branvelo.com")
+
 MIDDLEWARE = [
+    # Resolves the tenant from the hostname and sets the DB schema for the
+    # whole request. Must run before anything that touches the database.
+    "django_tenants.middleware.main.TenantMainMiddleware",
     "config.middleware.SimpleCorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -56,10 +82,11 @@ TEMPLATES = [
 
 # PostgreSQL when POSTGRES_HOST is set (Docker Compose always sets it);
 # SQLite fallback so `manage.py check` and unit smoke tests run anywhere.
+# The django-tenants backend is required: it owns search_path switching.
 if os.environ.get("POSTGRES_HOST"):
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.postgresql",
+            "ENGINE": "django_tenants.postgresql_backend",
             "NAME": os.environ.get("POSTGRES_DB", "branvelo"),
             "USER": os.environ.get("POSTGRES_USER", "branvelo"),
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "branvelo-dev-password"),

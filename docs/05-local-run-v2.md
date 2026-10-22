@@ -33,6 +33,29 @@ docker compose logs -f api   # watch Django logs
 docker compose logs -f web   # watch Next.js logs
 ```
 
+## Phase 2: tenancy + platform admin
+
+The api container now boots in three steps: `migrate_schemas` (public
+schema + every tenant schema), `bootstrap_platform` (idempotent: public
+tenant, `localhost` domains, the `starter` plan at Rs 2,499/mo placeholder,
+and a superuser if `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD` are
+set in `.env`), then the dev server.
+
+- Platform super-admin: http://localhost:8000/admin — tenants, domains,
+  plans, subscriptions and the audit log. This is where you run the
+  platform from.
+- Create a test restaurant (its own schema is created automatically):
+  ```bash
+  docker compose exec api python manage.py provision_tenant \
+    --slug test-cafe --name "Test Cafe" \
+    --owner-name "Test Owner" --owner-email owner@example.com
+  ```
+  Then browse http://test-cafe.localhost:8000/health — a 200 means the
+  subdomain resolved to that tenant's schema. An unknown subdomain
+  returns 404 by design.
+- Wipe everything and re-prove from zero: `docker compose down -v` then
+  `docker compose up --build`.
+
 ## Notes
 
 - Your code edits on your machine reflect live inside the containers
