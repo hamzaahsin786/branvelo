@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -199,19 +200,43 @@ function formatIn(amount: number, code: CurrencyCode): string {
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<CurrencyCode>("PKR");
   const [auto, setAuto] = useState(true);
+  const autoRef = useRef(true);
+  const lastIpCheck = useRef(0);
+
+  useEffect(() => {
+    autoRef.current = auto;
+  }, [auto]);
+
+  /** IP-based detection, throttled so tab-switching cannot spam lookups. */
+  function checkIp(force = false) {
+    const now = Date.now();
+    if (!force && now - lastIpCheck.current < 15000) return;
+    lastIpCheck.current = now;
+    void detectFromIp().then((code) => {
+      if (code && autoRef.current) setCurrencyState(code);
+    });
+  }
 
   function runDetection() {
     // Instant best guess from the browser, then the IP-based country
     // (the connection country) refines it a moment later.
     setCurrencyState(detectFromBrowser());
-    let cancelled = false;
-    void detectFromIp().then((code) => {
-      if (!cancelled && code) setCurrencyState(code);
-    });
-    return () => {
-      cancelled = true;
-    };
+    checkIp(true);
   }
+
+  // In Auto mode, re-check when the visitor returns to this tab. This is
+  // what makes the currency follow a VPN switched mid-session, with no
+  // reload: connect elsewhere, come back to the tab, it corrects itself.
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === "visible" && autoRef.current) {
+        checkIp();
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     // A manual choice in the header always wins and is never overridden.
