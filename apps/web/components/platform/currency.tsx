@@ -103,17 +103,39 @@ function detectFromBrowser(): CurrencyCode {
 
 /**
  * Primary signal: the country the visitor connects FROM (IP geolocation).
- * This is what makes the currency follow travel and VPNs. Several free
- * no-key sources are tried in order, because shared VPN/datacenter IPs
- * get rate-limited by individual providers (ipapi.co rate-limits free
- * VPN exits, ipwho.is answered for the same IP). First success wins.
+ * This is what makes the currency follow travel and VPNs. All sources run
+ * IN PARALLEL and the first answer wins: sequential checks with short
+ * timeouts all died behind a slow free-VPN proxy, and individual sources
+ * rate-limit shared VPN exits (ipapi.co did; ipwho.is answered for the
+ * same IP). Cloudflare's trace endpoint is included because it is fast
+ * and almost never blocked.
  */
-async function fetchJson(url: string): Promise<Record<string, unknown> | null> {
+const GEO_TIMEOUT_MS = 9000;
+
+async function fetchJson(
+  url: string,
+): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(GEO_TIMEOUT_MS),
+    });
     if (res.ok) return (await res.json()) as Record<string, unknown>;
-  } catch {
-    /* try the next source */
+    console.debug(`[branvelo] geo source ${url} answered HTTP ${res.status}`);
+  } catch (err) {
+    console.debug(`[branvelo] geo source ${url} failed`, err);
+  }
+  return null;
+}
+
+async function fetchText(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(GEO_TIMEOUT_MS),
+    });
+    if (res.ok) return await res.text();
+    console.debug(`[branvelo] geo source ${url} answered HTTP ${res.status}`);
+  } catch (err) {
+    console.debug(`[branvelo] geo source ${url} failed`, err);
   }
   return null;
 }
@@ -121,43 +143,93 @@ async function fetchJson(url: string): Promise<Record<string, unknown> | null> {
 function pick(
   currencyRaw: unknown,
   countryRaw: unknown,
-): CurrencyCode | null {
+): { currency: CurrencyCode; country: string } | null {
+  if (typeof countryRaw === "string" && COUNTRY_TO_CURRENCY[countryRaw]) {
+    return { currency: COUNTRY_TO_CURRENCY[countryRaw], country: countryRaw };
+  }
   if (
     typeof currencyRaw === "string" &&
     CURRENCIES.some((c) => c.code === currencyRaw)
   ) {
-    return currencyRaw as CurrencyCode;
-  }
-  if (typeof countryRaw === "string" && COUNTRY_TO_CURRENCY[countryRaw]) {
-    return COUNTRY_TO_CURRENCY[countryRaw];
+    return { currency: currencyRaw as CurrencyCode, country: "" };
   }
   return null;
 }
 
-async function detectFromIp(): Promise<CurrencyCode | null> {
-  const ipwho = await fetchJson("https://ipwho.is/");
-  if (ipwho) {
-    const currencyObj = ipwho.currency as { code?: unknown } | undefined;
-    const hit = pick(currencyObj?.code, ipwho.country_code);
-    if (hit) return hit;
-  }
-  const ipapi = await fetchJson("https://ipapi.co/json/");
-  if (ipapi) {
-    const hit = pick(ipapi.currency, ipapi.country_code);
-    if (hit) return hit;
-  }
-  const countryIs = await fetchJson("https://api.country.is/");
-  if (countryIs) {
-    const hit = pick(undefined, countryIs.country);
-    if (hit) return hit;
-  }
-  const geojs = await fetchJson("https://get.geojs.io/v1/ip/country.json");
-  if (geojs) {
-    const hit = pick(undefined, geojs.country);
-    if (hit) return hit;
-  }
-  return null;
+async function detectFromIp(): Promise<{
+  currency: CurrencyCode;
+  country: string;
+} | null> {
+  const attempts: Array<
+    Promise<{ currency: CurrencyCode; country: string } | null>
+  > = [
+    (async () => {
+      const d = await fetchJson("https://ipwho.is/");
+      if (!d) return null;
+      const cur = d.currency as { code?: unknown } | undefined;
+      return pick(cur?.code, d.country_code);
+    })(),
+    (async () => {
+      const t = await fetchText("https://www.cloudflare.com/cdn-cgi/trace");
+      const loc = t?.match(/^loc=([A-Z]{2})$/m)?.[1];
+      return loc ? pick(undefined, loc) : null;
+    })(),
+    (async () => {
+      const d = await fetchJson("https://ipapi.co/json/");
+      return d ? pick(d.currency, d.country_code) : null;
+    })(),
+    (async () => {
+      const d = await fetchJson("https://api.country.is/");
+      return d ? pick(undefined, d.country) : null;
+    })(),
+    (async () => {
+      const d = await fetchJson("https://get.geojs.io/v1/ip/country.json");
+      return d ? pick(undefined, d.country) : null;
+    })(),
+  ];
+  return new Promise((resolve) => {
+    let pending = attempts.length;
+    let settled = false;
+    attempts.forEach((p) =>
+      p
+        .then((hit) => {
+          if (hit && !settled) {
+            settled = true;
+            console.debug(
+              `[branvelo] detected country ${hit.country || "?"} -> ${hit.currency}`,
+            );
+            resolve(hit);
+          } else if (--pending === 0 && !settled) {
+            resolve(null);
+          }
+        })
+        .catch(() => {
+          if (--pending === 0 && !settled) resolve(null);
+        }),
+    );
+  });
 }
+
+const COUNTRY_NAMES: Record<string, string> = {
+  PK: "Pakistan",
+  US: "United States",
+  CA: "Canada",
+  GB: "United Kingdom",
+  AE: "UAE",
+  SA: "Saudi Arabia",
+  IN: "India",
+  DE: "Germany",
+  FR: "France",
+  IT: "Italy",
+  ES: "Spain",
+  NL: "Netherlands",
+  IE: "Ireland",
+  PT: "Portugal",
+  AT: "Austria",
+  BE: "Belgium",
+  FI: "Finland",
+  GR: "Greece",
+};
 
 type CurrencyCtx = {
   currency: CurrencyCode;
@@ -166,6 +238,8 @@ type CurrencyCtx = {
   auto: boolean;
   /** Switch back to automatic (by-country) detection. */
   useAuto: () => void;
+  /** Country code from the last successful IP detection, if any. */
+  detectedCountry: string | null;
   /** Convert a PKR amount and format it in the active currency. */
   fromPkr: (amountPkr: number) => string;
   /** Format an amount that is already in the active currency. */
@@ -179,6 +253,7 @@ const Ctx = createContext<CurrencyCtx>({
   setCurrency: () => {},
   auto: true,
   useAuto: () => {},
+  detectedCountry: null,
   fromPkr: (n) => `Rs ${Math.round(n).toLocaleString("en-PK")}`,
   format: (n) => `Rs ${Math.round(n).toLocaleString("en-PK")}`,
   fee: BASE_PRICE_PKR,
@@ -200,6 +275,7 @@ function formatIn(amount: number, code: CurrencyCode): string {
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<CurrencyCode>("PKR");
   const [auto, setAuto] = useState(true);
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
   const autoRef = useRef(true);
   const lastIpCheck = useRef(0);
 
@@ -212,8 +288,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const now = Date.now();
     if (!force && now - lastIpCheck.current < 15000) return;
     lastIpCheck.current = now;
-    void detectFromIp().then((code) => {
-      if (code && autoRef.current) setCurrencyState(code);
+    void detectFromIp().then((hit) => {
+      if (hit && autoRef.current) {
+        setCurrencyState(hit.currency);
+        if (hit.country) setDetectedCountry(hit.country);
+      }
     });
   }
 
@@ -267,6 +346,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       /* storage unavailable */
     }
     setAuto(true);
+    setDetectedCountry(null);
     runDetection();
   }
 
@@ -275,6 +355,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     setCurrency,
     auto,
     useAuto,
+    detectedCountry,
     fromPkr: (n) => formatIn(n * RATES[currency], currency),
     format: (n) => formatIn(n, currency),
     fee: Math.round(BASE_PRICE_PKR * RATES[currency]),
@@ -284,7 +365,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 }
 
 export function CurrencySelector() {
-  const { currency, setCurrency, auto, useAuto } = useCurrency();
+  const { currency, setCurrency, auto, useAuto, detectedCountry } =
+    useCurrency();
+  const autoLabel = detectedCountry
+    ? `Auto · ${COUNTRY_NAMES[detectedCountry] ?? detectedCountry}`
+    : "Auto · by country";
   return (
     <select
       aria-label="Display currency"
@@ -295,7 +380,7 @@ export function CurrencySelector() {
       }}
       className="cursor-pointer rounded-full border border-[#DDD9FA] bg-white px-2.5 py-2 text-[13px] font-extrabold text-[#2C24A3] outline-none transition hover:bg-[#F1EFFF]"
     >
-      <option value="AUTO">Auto · by country</option>
+      <option value="AUTO">{autoLabel}</option>
       {CURRENCIES.map((c) => (
         <option key={c.code} value={c.code}>
           {c.label}
