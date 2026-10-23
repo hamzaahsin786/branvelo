@@ -2,14 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createBrowserSupabase } from "@/lib/supabase-browser";
-import { apiFetch } from "@/lib/api";
-import { useTenantSlug } from "@/lib/tenant-context";
+import { setStaffToken, tenantApiOrigin } from "@/lib/staff-api";
 
-/** Admin sign-in - Supabase Auth email/password, then role-checked via the API. */
+/** Admin sign-in — Django staff login (per-tenant token auth). */
 export function LoginForm() {
   const router = useRouter();
-  const slug = useTenantSlug();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -19,26 +16,18 @@ export function LoginForm() {
     setError(null);
     setBusy(true);
     try {
-      const supabase = createBrowserSupabase();
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      const res = await fetch(`${tenantApiOrigin()}/api/staff/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: email.trim(), password }),
       });
-      if (authError || !data.session) {
-        setError("Invalid email or password");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.token) {
+        setError(data.detail || "Invalid email or password");
         return;
       }
-      // Verify this account is actually staff of this restaurant
-      const res = await apiFetch("/api/admin/me", slug, {
-        token: data.session.access_token,
-      });
-      if (!res.ok) {
-        await supabase.auth.signOut();
-        setError("This account has no staff access for this restaurant");
-        return;
-      }
-      router.push("/admin");
-      router.refresh();
+      setStaffToken(data.token);
+      router.push("/admin/menu");
     } catch {
       setError("Network error. Please try again");
     } finally {

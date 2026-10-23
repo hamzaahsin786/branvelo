@@ -34,6 +34,7 @@ TENANT_APPS = [
     # logins are per-tenant auth users (see accounts.StaffUser).
     "django.contrib.contenttypes",
     "django.contrib.auth",
+    "rest_framework.authtoken",  # staff API tokens live per tenant schema
     "accounts",
     "catalog",
     "ordering",
@@ -124,6 +125,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
     "DEFAULT_THROTTLE_RATES": {
         # Public signup surface: generous for real users, useless for abuse.
         "signup": "10/hour",

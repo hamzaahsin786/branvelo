@@ -1,15 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createBrowserSupabase } from "@/lib/supabase-browser";
+import { clearStaffToken } from "@/lib/staff-api";
 
 export function SignOutButton() {
   const router = useRouter();
-  const signOut = async () => {
-    const supabase = createBrowserSupabase();
-    await supabase.auth.signOut();
+  const signOut = () => {
+    clearStaffToken();
     router.push("/admin/login");
-    router.refresh();
   };
   return (
     <button

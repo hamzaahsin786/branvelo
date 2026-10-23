@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { Category, MenuItem } from "@branvelo/shared";
 import { formatRs } from "@branvelo/shared";
-import { useAuthedApi } from "@/lib/use-authed-api";
+import { useStaffApi } from "@/lib/staff-api";
 
 interface Props {
   initialCategories: Category[];
@@ -37,7 +37,7 @@ const BADGE_OPTIONS = ["bestseller", "new", "popular"];
 
 /** Menu manager: categories CRUD + items table with edit drawer. */
 export function MenuManager({ initialCategories, initialItems }: Props) {
-  const api = useAuthedApi();
+  const api = useStaffApi();
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [items, setItems] = useState<MenuItem[]>(initialItems);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
     if (catName.trim().length < 2) return;
     try {
       if (editingCat) {
-        const res = await api(`/api/admin/menu/categories/${editingCat.id}`, {
+        const res = await api(`/api/staff/catalog/categories/${editingCat.id}`, {
           method: "PATCH",
           body: JSON.stringify({ name: catName.trim(), tagline: catTagline.trim() }),
         });
@@ -77,7 +77,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
         const updated = (await res.json()) as Category;
         setCategories((cs) => cs.map((c) => (c.id === updated.id ? updated : c)));
       } else {
-        const res = await api("/api/admin/menu/categories", {
+        const res = await api("/api/staff/catalog/categories", {
           method: "POST",
           body: JSON.stringify({
             name: catName.trim(),
@@ -100,7 +100,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
   const deleteCategory = async (id: string) => {
     if (!confirm("Delete this category?")) return;
     try {
-      const res = await api(`/api/admin/menu/categories/${id}`, { method: "DELETE" });
+      const res = await api(`/api/staff/catalog/categories/${id}`, { method: "DELETE" });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error || "Could not delete category");
       setCategories((cs) => cs.filter((c) => c.id !== id));
@@ -140,7 +140,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
     };
     try {
       if (drawer.id) {
-        const res = await api(`/api/admin/menu/items/${drawer.id}`, {
+        const res = await api(`/api/staff/catalog/items/${drawer.id}`, {
           method: "PATCH",
           body: JSON.stringify(payload),
         });
@@ -148,7 +148,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
         const updated = (await res.json()) as MenuItem;
         setItems((is) => is.map((i) => (i.id === updated.id ? updated : i)));
       } else {
-        const res = await api("/api/admin/menu/items", {
+        const res = await api("/api/staff/catalog/items", {
           method: "POST",
           body: JSON.stringify(payload),
         });
@@ -165,7 +165,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
   const deleteItem = async (id: string) => {
     if (!confirm("Delete this item?")) return;
     try {
-      const res = await api(`/api/admin/menu/items/${id}`, { method: "DELETE" });
+      const res = await api(`/api/staff/catalog/items/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Could not delete item");
       setItems((is) => is.filter((i) => i.id !== id));
     } catch (e) {
@@ -175,7 +175,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
 
   const toggleAvailable = async (item: MenuItem) => {
     try {
-      const res = await api(`/api/admin/menu/items/${item.id}`, {
+      const res = await api(`/api/staff/catalog/items/${item.id}`, {
         method: "PATCH",
         body: JSON.stringify({ available: !item.available }),
       });

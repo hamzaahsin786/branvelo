@@ -72,6 +72,28 @@ is there — and http://spice-route.localhost:8000/health answers from the
 new tenant's schema. (At deployment, `branvelo.com` and `www` get domain
 rows pointing at the public tenant so this same API serves production.)
 
+## Phase 4: catalog + storefront
+
+Staff side (per tenant, token auth):
+- Sign in at http://<slug>.localhost:3000/admin/login with the owner email
+  + password chosen at signup. The browser stores a per-tenant API token.
+- Menu manager at /admin/menu: categories and items CRUD against the
+  Django staff API (`/api/staff/catalog/...`). Modifier groups/options,
+  delivery zones and coupons are in the same API (UI lands with later
+  phases). Menu photos: `POST /api/staff/catalog/upload-photo` (multipart,
+  field `file`, max 5 MB) returns a hosted URL.
+- Roles: owner/manager can write; other staff roles are read-only.
+
+Customer side:
+- http://<slug>.localhost:3000 shows the restaurant's real storefront:
+  profile, announcement, hours, zones, and the live menu, rendered in the
+  theme chosen at signup (color, font, layout variant, sections).
+- Data comes from `GET /api/storefront/` on the tenant's own subdomain —
+  the browser calls the API on the same hostname (port 8000), which is
+  how the tenant is resolved. Ordering/cart arrives in Phase 5.
+- Unknown subdomain -> "not on Branvelo yet" page; the platform site
+  stays at http://localhost:3000/platform.
+
 ## Notes
 
 - Your code edits on your machine reflect live inside the containers
