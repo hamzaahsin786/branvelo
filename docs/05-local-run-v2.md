@@ -114,7 +114,14 @@ Staff side (per tenant, token auth):
   through real dish names; a Playfair Display serif font option serves
   premium/traditional brands; floating WhatsApp and back-to-top buttons
   (WhatsApp toggleable in Appearance); skeleton loading state; rich
-  footer with logo, address and phone.
+  footer with logo, address and phone. A branded location gate
+  (theme section `location_gate`, on by default) asks first-time
+  visitors for Delivery or Pick-Up and, for delivery, their area from
+  a searchable list built from the delivery zones' areas (fee and
+  minimum shown per area); the choice persists on the device,
+  preselects the checkout zone/type, prefills the address with the
+  area, and is changeable any time from the header location pill.
+  Skipping dismisses it for the session only.
 - Roles: owner/manager can write; other staff roles are read-only.
 - Settings at /admin/settings: restaurant profile, appearance (theme),
   opening hours and delivery zones. Backed by

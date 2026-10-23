@@ -15,6 +15,7 @@ export interface Theme {
     featured: boolean;
     about: boolean;
     whatsapp: boolean;
+    location_gate: boolean;
   };
 }
 
@@ -69,7 +70,13 @@ const DEFAULT_THEME: Theme = {
   font: "nunito",
   layout: "grid",
   cat_nav: "pills",
-  sections: { announcement: true, featured: true, about: true, whatsapp: true },
+  sections: {
+    announcement: true,
+    featured: true,
+    about: true,
+    whatsapp: true,
+    location_gate: true,
+  },
 };
 
 function normalizeTheme(raw: Partial<Theme> | undefined): Theme {
@@ -481,6 +488,7 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
               ["featured", "Featured items section"],
               ["about", "About section"],
               ["whatsapp", "WhatsApp chat button"],
+              ["location_gate", "Location gate (ask order type and area first)"],
             ] as const
           ).map(([key, label]) => (
             <label

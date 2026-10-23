@@ -19,6 +19,7 @@ DEFAULT_THEME = {
         "featured": True,
         "about": True,
         "whatsapp": True,
+        "location_gate": True,
     },
 }
 

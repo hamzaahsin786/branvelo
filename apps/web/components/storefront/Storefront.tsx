@@ -23,6 +23,7 @@ interface Theme {
     featured: boolean;
     about: boolean;
     whatsapp?: boolean;
+    location_gate?: boolean;
   };
 }
 interface ModifierOption {
@@ -59,9 +60,18 @@ interface Category {
 interface Zone {
   id: number;
   name: string;
+  areas: string[];
   fee_pkr: number;
   min_order_pkr: number;
   free_above_pkr: number | null;
+}
+
+/** What the location gate captured: how the customer wants their food,
+ * and (for delivery) which zone/area they are in. Persisted per host. */
+interface GateSelection {
+  type: "delivery" | "pickup";
+  zone_id: number | null;
+  area: string;
 }
 interface StorefrontData {
   profile: {
@@ -145,6 +155,11 @@ export function Storefront() {
       const saved = window.localStorage.getItem(`branvelo-cart-${window.location.hostname}`);
       if (saved) setCart(JSON.parse(saved) as CartLine[]);
     } catch { /* fresh cart */ }
+    try {
+      const gate = window.localStorage.getItem(`branvelo-gate-${window.location.hostname}`);
+      if (gate) setGateSel(JSON.parse(gate) as GateSelection);
+    } catch { /* no saved selection */ }
+    setGateLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -159,6 +174,38 @@ export function Storefront() {
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<number | null>(null);
   const [showTop, setShowTop] = useState(false);
+  const [gateSel, setGateSel] = useState<GateSelection | null>(null);
+  const [gateLoaded, setGateLoaded] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
+
+  // The location gate: ask once per customer (the choice persists on
+  // this device) - skipping only dismisses it for this session.
+  useEffect(() => {
+    if (!gateLoaded || state !== "ready" || !data || gateSel) return;
+    if (data.profile.theme.sections.location_gate === false) return;
+    try {
+      if (window.sessionStorage.getItem("branvelo-gate-skip")) return;
+    } catch { /* storage unavailable */ }
+    setGateOpen(true);
+  }, [gateLoaded, state, data, gateSel]);
+
+  const saveGate = (sel: GateSelection) => {
+    setGateSel(sel);
+    setGateOpen(false);
+    try {
+      window.localStorage.setItem(
+        `branvelo-gate-${window.location.hostname}`,
+        JSON.stringify(sel),
+      );
+    } catch { /* storage unavailable */ }
+  };
+
+  const skipGate = () => {
+    setGateOpen(false);
+    try {
+      window.sessionStorage.setItem("branvelo-gate-skip", "1");
+    } catch { /* storage unavailable */ }
+  };
 
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 700);
@@ -356,6 +403,24 @@ export function Storefront() {
             )}
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setGateOpen(true)}
+              className="flex max-w-[150px] items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[12px] font-extrabold text-white"
+              title="Change order type or delivery area"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 shrink-0" aria-hidden>
+                <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
+              </svg>
+              <span className="truncate">
+                {gateSel
+                  ? gateSel.type === "pickup"
+                    ? "Pick-Up"
+                    : gateSel.area ||
+                      zones.find((z) => z.id === gateSel.zone_id)?.name ||
+                      "Delivery"
+                  : "Select area"}
+              </span>
+            </button>
             {profile.phone && (
               <a
                 href={`tel:${profile.phone.replace(/\s/g, "")}`}
@@ -714,7 +779,20 @@ export function Storefront() {
           subtotal={cartSubtotal}
           primary={primary}
           restaurantName={profile.name}
+          gate={gateSel}
           onClose={() => setCheckoutOpen(false)}
+        />
+      )}
+
+      {gateOpen && (
+        <LocationGate
+          profile={profile}
+          zones={zones}
+          primary={primary}
+          todayHours={todayHours}
+          current={gateSel}
+          onSelect={saveGate}
+          onSkip={skipGate}
         />
       )}
     </div>
@@ -991,6 +1069,186 @@ function FeedbackBlock({ primary }: { primary: string }) {
   );
 }
 
+/** The location gate: the branded entry modal from the indolj playbook.
+ * Asks how the customer wants their food and, for delivery, which area
+ * they are in - the choice persists on the device, preselects the
+ * checkout zone, and can be changed any time from the header pill.
+ * Skipping only dismisses it for the session. */
+function LocationGate({
+  profile,
+  zones,
+  primary,
+  todayHours,
+  current,
+  onSelect,
+  onSkip,
+}: {
+  profile: StorefrontData["profile"];
+  zones: Zone[];
+  primary: string;
+  todayHours: StorefrontData["hours"][number] | undefined;
+  current: GateSelection | null;
+  onSelect: (sel: GateSelection) => void;
+  onSkip: () => void;
+}) {
+  const [type, setType] = useState<"delivery" | "pickup">(
+    current?.type ?? "delivery",
+  );
+  const [query, setQuery] = useState("");
+
+  interface AreaRow {
+    zoneId: number;
+    zoneName: string;
+    area: string;
+    fee: number;
+    min: number;
+  }
+  const rows = useMemo<AreaRow[]>(() => {
+    const out: AreaRow[] = [];
+    for (const z of zones) {
+      if (z.areas && z.areas.length > 0) {
+        for (const a of z.areas) {
+          out.push({ zoneId: z.id, zoneName: z.name, area: a, fee: z.fee_pkr, min: z.min_order_pkr });
+        }
+      } else {
+        out.push({ zoneId: z.id, zoneName: z.name, area: z.name, fee: z.fee_pkr, min: z.min_order_pkr });
+      }
+    }
+    return out;
+  }, [zones]);
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? rows.filter((r) => `${r.area} ${r.zoneName}`.toLowerCase().includes(q))
+    : rows;
+  const multiZone = new Set(rows.map((r) => r.zoneId)).size > 1;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 sm:items-center" onClick={onSkip}>
+      <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 px-5 py-4 text-white" style={{ backgroundColor: primary }}>
+          {profile.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.logo_url} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-white/40" />
+          ) : (
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20 text-xl font-black ring-2 ring-white/40">
+              {profile.name.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-base font-black leading-tight">{profile.name}</p>
+            <p className="text-[13px] font-semibold text-white/80">Select your order type</p>
+          </div>
+          <button
+            onClick={onSkip}
+            aria-label="Close"
+            className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-white"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="block">
+              <path d="M5 5l14 14M19 5L5 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-5">
+          <div className="grid grid-cols-2 gap-2">
+            {(["delivery", "pickup"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setType(t)}
+                className={`rounded-full py-2.5 text-sm font-extrabold capitalize ring-1 ${type === t ? "text-white" : "bg-white text-neutral-600 ring-neutral-200"}`}
+                style={type === t ? { backgroundColor: primary } : undefined}
+              >
+                {t === "pickup" ? "Pick-Up" : "Delivery"}
+              </button>
+            ))}
+          </div>
+
+          {type === "delivery" ? (
+            <>
+              {zones.length === 0 ? (
+                <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
+                  This restaurant has not set up delivery areas yet. You can
+                  still order for pick-up, or call {profile.phone || "the restaurant"} to ask about delivery.
+                </p>
+              ) : (
+                <>
+                  <div className="relative mt-4">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden>
+                      <circle cx="11" cy="11" r="7" />
+                      <path d="m20 20-3.8-3.8" strokeLinecap="round" />
+                    </svg>
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Search your area..."
+                      className="w-full rounded-full bg-neutral-50 py-2.5 pl-11 pr-4 text-sm font-semibold outline-none ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-300"
+                    />
+                  </div>
+                  <div className="mt-3 flex max-h-64 flex-col gap-1.5 overflow-y-auto">
+                    {visible.map((r) => (
+                      <button
+                        key={`${r.zoneId}-${r.area}`}
+                        onClick={() => onSelect({ type: "delivery", zone_id: r.zoneId, area: r.area === r.zoneName ? "" : r.area })}
+                        className="flex items-center justify-between gap-3 rounded-2xl bg-neutral-50 px-3.5 py-3 text-left ring-1 ring-transparent hover:ring-neutral-300"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-extrabold">{r.area}</span>
+                          <span className="block text-[12px] font-semibold text-neutral-400">
+                            {multiZone ? `${r.zoneName} - ` : ""}
+                            {r.min > 0 ? `Min order ${formatRs(r.min)}` : "No minimum order"}
+                          </span>
+                        </span>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold ${r.fee === 0 ? "bg-green-100 text-green-700" : "bg-white text-neutral-600 ring-1 ring-neutral-200"}`}>
+                          {r.fee === 0 ? "Free delivery" : formatRs(r.fee)}
+                        </span>
+                      </button>
+                    ))}
+                    {visible.length === 0 && (
+                      <p className="py-4 text-center text-sm font-semibold text-neutral-400">
+                        No delivery areas match "{query}". Try a nearby area name, or order for pick-up.
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div className="mt-4">
+              <div className="rounded-2xl bg-neutral-50 px-4 py-3.5">
+                <p className="text-sm font-extrabold">Pick up from</p>
+                <p className="mt-0.5 text-sm font-semibold text-neutral-600">
+                  {profile.address}
+                  {profile.address && profile.city ? ", " : ""}
+                  {profile.city}
+                </p>
+                {todayHours && (
+                  <p className="mt-1 text-[13px] font-semibold text-neutral-500">
+                    {todayHours.is_closed ? "Closed today" : `Open today ${todayHours.open} - ${todayHours.close}`}
+                  </p>
+                )}
+                {profile.phone && (
+                  <p className="text-[13px] font-semibold text-neutral-500">Call: {profile.phone}</p>
+                )}
+              </div>
+              <button
+                onClick={() => onSelect({ type: "pickup", zone_id: null, area: "" })}
+                className="mt-3 w-full rounded-full py-3 text-sm font-extrabold text-white"
+                style={{ backgroundColor: primary }}
+              >
+                Order for pick-up
+              </button>
+            </div>
+          )}
+
+          <button onClick={onSkip} className="mt-4 block w-full text-center text-sm font-bold text-neutral-500">
+            Browse the menu first
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CheckoutPanel({
   cart,
   setCart,
@@ -998,6 +1256,7 @@ function CheckoutPanel({
   subtotal,
   primary,
   restaurantName,
+  gate,
   onClose,
 }: {
   cart: CartLine[];
@@ -1006,13 +1265,20 @@ function CheckoutPanel({
   subtotal: number;
   primary: string;
   restaurantName: string;
+  gate: GateSelection | null;
   onClose: () => void;
 }) {
-  const [type, setType] = useState<"delivery" | "pickup">(zones.length > 0 ? "delivery" : "pickup");
-  const [zoneId, setZoneId] = useState<number | "">(zones[0]?.id ?? "");
+  const [type, setType] = useState<"delivery" | "pickup">(
+    gate?.type ?? (zones.length > 0 ? "delivery" : "pickup"),
+  );
+  const [zoneId, setZoneId] = useState<number | "">(
+    gate?.zone_id ?? zones[0]?.id ?? "",
+  );
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [address, setAddress] = useState(
+    gate?.type === "delivery" && gate.area ? `${gate.area}, ` : "",
+  );
   const [coupon, setCoupon] = useState("");
   const [payment, setPayment] = useState("cod");
   const [error, setError] = useState<string | null>(null);
