@@ -9,3 +9,5 @@ gunicorn~=23.0.0
 channels~=4.2.0
 channels-redis~=4.2.0
 daphne~=4.1.0
+# Menu import from .xlsx sheets (Phase: menu import).
+openpyxl~=3.1.0

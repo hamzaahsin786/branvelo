@@ -74,7 +74,9 @@ export async function staffFetch(
   const headers = new Headers(init.headers);
   const token = getStaffToken();
   if (token) headers.set("Authorization", `Token ${token}`);
-  if (init.body && !headers.has("Content-Type")) {
+  // JSON is the default for string bodies; FormData bodies must keep the
+  // browser's multipart content type (it carries the file boundary).
+  if (typeof init.body === "string" && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   return fetch(`${tenantApiOrigin()}${path}`, { ...init, headers });

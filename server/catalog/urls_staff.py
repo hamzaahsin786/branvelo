@@ -2,6 +2,11 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from catalog.imports import (
+    ImagePreviewView,
+    ImportCommitView,
+    SheetPreviewView,
+)
 from catalog.views import (
     CategoryViewSet,
     CouponViewSet,
@@ -24,5 +29,8 @@ router.register("coupons", CouponViewSet)
 urlpatterns = [
     path("upload-photo", PhotoUploadView.as_view()),
     path("profile", StaffProfileView.as_view()),
+    path("import/sheet-preview", SheetPreviewView.as_view()),
+    path("import/image-preview", ImagePreviewView.as_view()),
+    path("import/commit", ImportCommitView.as_view()),
     *router.urls,
 ]

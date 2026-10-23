@@ -4,15 +4,19 @@ import { useEffect, useState } from "react";
 import type { Category, MenuItem } from "@branvelo/shared";
 import { staffFetch } from "@/lib/staff-api";
 import { MenuManager } from "@/components/admin/MenuManager";
+import { MenuImport } from "@/components/admin/MenuImport";
 
 /** Menu manager page (v2): loads the tenant's catalog from the Django
- * staff API, then hands it to the (rewired) MenuManager component. */
+ * staff API, then hands it to the (rewired) MenuManager component. The
+ * import panel sits above it; after an import the catalog reloads. */
 export default function AdminMenuPage() {
   const [data, setData] = useState<{
     categories: Category[];
     items: MenuItem[];
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -32,7 +36,7 @@ export default function AdminMenuPage() {
         );
       }
     })();
-  }, []);
+  }, [reloadKey]);
 
   if (error) {
     return (
@@ -45,6 +49,31 @@ export default function AdminMenuPage() {
     return <p className="text-sm font-semibold text-neutral-400">Loading menu...</p>;
   }
   return (
-    <MenuManager initialCategories={data.categories} initialItems={data.items} />
+    <div>
+      <div className="mb-3 flex justify-end">
+        {!importOpen && (
+          <button
+            onClick={() => setImportOpen(true)}
+            className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-bold text-white"
+          >
+            Import menu
+          </button>
+        )}
+      </div>
+      {importOpen && (
+        <MenuImport
+          onClose={() => setImportOpen(false)}
+          onImported={() => {
+            setImportOpen(false);
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      )}
+      <MenuManager
+        key={reloadKey}
+        initialCategories={data.categories}
+        initialItems={data.items}
+      />
+    </div>
   );
 }

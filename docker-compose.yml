@@ -41,6 +41,9 @@ services:
       # platform super-admin on first boot.
       PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL:-}
       PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:-}
+      # Optional: free Gemini API key (Google AI Studio) - enables the
+      # menu photo import in the admin. Sheet import works without it.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "8000:8000"
     depends_on:

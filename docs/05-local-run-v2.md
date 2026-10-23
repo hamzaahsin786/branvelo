@@ -98,6 +98,16 @@ Staff side (per tenant, token auth):
   same cleaner as signup) plus the zones viewset. This page replaced the
   last v1-wired admin screen in 2026-10; the old /admin/orders/<id> path
   now redirects to the orders board, where order detail lives.
+- Menu import at /admin/menu (Import menu button), review-first:
+  `POST /api/staff/catalog/import/sheet-preview` reads a .csv/.xlsx
+  (header detection with name/price/description/category/available
+  aliases, messy prices cleaned, bad rows flagged, duplicates marked),
+  `POST /api/staff/catalog/import/image-preview` reads up to 4 menu
+  photos with the Gemini vision API (needs GEMINI_API_KEY in the api
+  environment; without a key it explains itself and sheet import keeps
+  working), and `POST /api/staff/catalog/import/commit` creates the
+  reviewed rows in one transaction, creating categories as needed and
+  skipping duplicates.
 
 Customer side:
 - http://<slug>.localhost:3000 shows the restaurant's real storefront:
