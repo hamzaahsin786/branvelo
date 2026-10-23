@@ -13,12 +13,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-key-change-me")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+
+# Production hardening (Phase 7): active only with DJANGO_DEBUG=0, i.e.
+# on the server behind the TLS-terminating proxy. Local Docker dev keeps
+# DEBUG=1 and none of this applies. ALLOWED_HOSTS stays broad because
+# tenant subdomains are validated against the Domain table by the
+# tenancy middleware, which is the real gate.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31_536_000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = "DENY"
 # Local development only. Deployment phase tightens this to real domains.
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 # --- django-tenants app split -------------------------------------------------
 SHARED_APPS = [
-    "django_tenants",  # must be first
+    "daphne",  # first: makes runserver serve ASGI (websockets) in dev
+    "django_tenants",  # must precede the tenant-model app
     "tenants_app",  # TENANT_MODEL lives here; shared by definition
     "django.contrib.admin",
     "django.contrib.auth",
@@ -27,6 +43,7 @@ SHARED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "channels",
 ]
 
 TENANT_APPS = [
@@ -105,6 +122,19 @@ else:
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 
+# Realtime (Django Channels): order events fan out through Redis so the
+# admin feed and tracking pages update live. Same Redis as everything else.
+# CHANNEL_LAYER=inmemory exists for single-process test runs only.
+if os.environ.get("CHANNEL_LAYER") == "inmemory":
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        }
+    }
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -133,5 +163,8 @@ REST_FRAMEWORK = {
         # Public signup surface: generous for real users, useless for abuse.
         "signup": "10/hour",
         "slug_check": "60/min",
+        "order_place": "30/hour",
+        "staff_login": "30/hour",
+        "feedback": "20/hour",
     },
 }

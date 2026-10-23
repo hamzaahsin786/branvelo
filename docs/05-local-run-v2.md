@@ -94,6 +94,51 @@ Customer side:
 - Unknown subdomain -> "not on Branvelo yet" page; the platform site
   stays at http://localhost:3000/platform.
 
+## Phase 5: ordering + realtime
+
+Customers can now order end to end:
+- On the storefront, items with options (size, extras) open a selection
+  sheet that enforces the restaurant's required/min/max rules; the cart
+  bar opens checkout (delivery zone or pickup, name/phone/address,
+  coupon, cash on delivery / JazzCash / EasyPaisa).
+- The server recomputes every price — client totals are never trusted —
+  and returns the order number. The success screen links to a live
+  tracking page (/track/<order-id>) that updates over websockets as the
+  kitchen moves the order (placed -> confirmed -> preparing -> ready ->
+  dispatched -> delivered), with the full item/total breakdown.
+- Admin: the Orders board (the /admin home) lists the day's orders
+  live (green "Live" badge when the websocket is connected; it polls as
+  a fallback), with role-correct action buttons — e.g. kitchen staff
+  can prepare but never cancel; cancellation closes once dispatched.
+- Wrong moves are rejected by the API's state machine with a plain
+  reason, which the board shows.
+
+## Phase 6: notifications, feedback, reports
+
+- New orders also write a dashboard notification (queue drained by
+  `python manage.py dispatch_notifications`; see docs/06) and can fire
+  a browser notification — click "Enable alerts" on the Orders board
+  once per browser.
+- Each order's detail has a "WhatsApp customer" button: a wa.me deep
+  link to the customer's number with the order status prefilled.
+- Customers can send praise/suggestions/complaints from the storefront
+  feedback block; staff triage them on the Reports page.
+- Reports (/admin/reports): orders, revenue, average order for any
+  date range; sales by day, busiest hours, top items — with CSV
+  downloads for days and items. Cancelled orders are excluded.
+
+## Phase 7: migration, isolation tests, backups
+
+- Import a v1 restaurant: export its Supabase tables as JSON into one
+  folder, then
+  `docker compose exec api python manage.py import_v1_tenant --dir <folder> --slug <slug> --create --owner-email <email> --owner-password <pw>`
+  (drop --create if the tenant already exists). Details in docs/06.
+- Tenant isolation is covered by an automated suite:
+  `docker compose exec api python manage.py test tenants_app.tests_isolation`
+- Backups: `scripts/backup.sh [schema]` / `scripts/restore.sh` —
+  see docs/06-hardening-and-ops.md for the full operations notes,
+  throttle table and the Phase 7 validation review.
+
 ## Notes
 
 - Your code edits on your machine reflect live inside the containers

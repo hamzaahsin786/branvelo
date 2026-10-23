@@ -5,6 +5,10 @@ from django.urls import include, path
 
 from config.views import health
 
+# URL style: named actions are slash-less (/api/platform/signup); the two
+# collection roots mounted with path("") keep their trailing slash
+# (/api/storefront/, /api/orders/, /api/staff/orders/). Clients must use
+# the exact forms — Django will not redirect a slash-less POST.
 urlpatterns = [
     path("health", health),
     path("admin/", admin.site.urls),
@@ -14,8 +18,12 @@ urlpatterns = [
     # Per-tenant staff API: token login + the catalog the admin manages.
     path("api/staff/", include("accounts.urls")),
     path("api/staff/catalog/", include("catalog.urls_staff")),
-    # Per-tenant public storefront payload.
+    path("api/staff/orders/", include("ordering.urls_staff")),
+    path("api/staff/", include("ordering.urls_admin")),
+    # Per-tenant public storefront payload + ordering + feedback.
     path("api/storefront/", include("catalog.urls_public")),
+    path("api/orders/", include("ordering.urls_public")),
+    path("api/feedback", include("ordering.urls_feedback")),
 ]
 
 if settings.DEBUG:

@@ -1,1 +1,1 @@
-# Platform CLI commands (bootstrap, tenant creation).
+# Management commands for the platform app.

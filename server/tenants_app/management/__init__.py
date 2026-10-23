@@ -1,1 +1,1 @@
-# Management commands for the platform control layer.
+# Management commands for the platform app.

@@ -4,3 +4,8 @@ django-tenants~=3.7.0
 psycopg[binary]~=3.2.0
 redis~=5.0.0
 gunicorn~=23.0.0
+# Realtime (Phase 5): Channels + Redis channel layer; daphne serves ASGI
+# for runserver in dev (gunicorn+uvicorn workers take over at deployment).
+channels~=4.2.0
+channels-redis~=4.2.0
+daphne~=4.1.0
