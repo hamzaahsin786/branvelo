@@ -2,7 +2,7 @@
 
 const isDev = process.env.NODE_ENV === "development";
 
-// API origin for CSP connect-src (the Fastify API the browser calls directly).
+// API origin for CSP connect-src (the API the browser calls directly).
 const apiOrigin = (() => {
   const raw = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   try {
@@ -10,6 +10,32 @@ const apiOrigin = (() => {
   } catch {
     return raw;
   }
+})();
+
+// The browser always calls the API on the SAME hostname as the page
+// (lib/staff-api swaps the host so tenant resolution works), so in local
+// dev the allow-list must cover every tenant subdomain, not just bare
+// localhost - an exact-origin entry blocks usama-burgers.localhost:8000
+// before the request ever leaves the browser. Websockets (live orders)
+// are governed by connect-src too, hence the ws entries. In production
+// the API is same-origin behind one proxy and 'self' covers it.
+const apiConnectSrc = (() => {
+  try {
+    const url = new URL(apiOrigin);
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+      const port = url.port || "8000";
+      return [
+        apiOrigin,
+        `http://localhost:${port}`,
+        `http://*.localhost:${port}`,
+        `ws://localhost:${port}`,
+        `ws://*.localhost:${port}`,
+      ].join(" ");
+    }
+  } catch {
+    /* fall through to the bare origin */
+  }
+  return apiOrigin;
 })();
 
 // Supabase is used for Auth + Realtime + Storage.
@@ -31,7 +57,7 @@ const contentSecurityPolicy = [
   // Menu photos come from Supabase Storage (https); data: for tiny inlined assets.
   "img-src 'self' data: https:",
   // API calls + Supabase Auth/Realtime/Storage + geo-IP lookups.
-  `connect-src 'self' ${apiOrigin} ${supabaseHosts} ${geoHosts}`,
+  `connect-src 'self' ${apiConnectSrc} ${supabaseHosts} ${geoHosts}`,
   "font-src 'self' data:",
   "object-src 'none'",
   "base-uri 'self'",
