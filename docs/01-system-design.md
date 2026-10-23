@@ -102,6 +102,28 @@ Kababjees-inspired, reskinned per restaurant brand:
 - **Storage**: one bucket, per-tenant prefixes (`tenants/<slug>/menu/...`).
 - **Sub-tenant scope**: branches (multi-branch in Phase 4) hang off the tenant.
 
+### Frontend model and customization guardrails (v2, decided 2026-10-23)
+
+One backend and one frontend serve every restaurant (v2 backend: schema-per-tenant,
+docs/04). The frontend is **theme as data, not code**: the storefront resolves the
+tenant from the subdomain, fetches that tenant's profile + theme
+(`restaurant_profile.theme`), and renders itself with those brand tokens as CSS
+variables. Launch customization depth: brand basics (logo, colors, fonts, cover
+photo), 2-3 layout variants the tenant picks from, and section toggles
+(announcement bar, featured items, about). Owners edit all of it themselves on an
+**Appearance** settings page in their admin (live preview, instant effect) — the
+Phase 3 signup wizard ends with the same controls ("make it yours").
+
+Guardrails:
+1. **Bounded tokens only.** Customization never becomes per-client code or a
+   forked template. The day one client's "custom design" needs custom code, the
+   one-codebase model dies: every update and bug fix would ship to N versions.
+2. **Custom domains are data, not work.** A client's own domain is just another
+   row in `domains` pointing at the same frontend. Supported later, not at launch.
+3. **The admin dashboard is identical for everyone.** Only the tenant's name and
+   logo appear in the shell. Branding effort goes to the storefront (what their
+   customers see), not to the tool.
+
 ## 6. Tech stack — the decision
 
 | Layer | Choice | Why (for us) |
