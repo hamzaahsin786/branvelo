@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Tenant } from "@branvelo/shared";
 import { useCart } from "@/lib/cart";
+import { PoweredBy } from "./PoweredBy";
 import {
   CartIcon,
   ChevronDownIcon,
@@ -129,7 +130,7 @@ export function PillHeader({ tenant, locationLabel, onLocationOpen }: Props) {
               )}
             </nav>
             <div className="mt-auto border-t p-4 text-center text-xs text-neutral-400">
-              Powered by Branvelo
+              <PoweredBy className="hover:text-neutral-600 hover:underline" />
             </div>
           </aside>
         </div>

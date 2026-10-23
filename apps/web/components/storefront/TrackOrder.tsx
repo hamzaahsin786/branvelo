@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { tenantApiOrigin } from "@/lib/staff-api";
 import { formatRs } from "./Storefront";
+import { PoweredBy } from "./PoweredBy";
 
 interface TrackedOrder {
   id: string;
@@ -207,7 +208,7 @@ export function TrackOrder({ orderId }: { orderId: string }) {
         </div>
 
         <p className="mt-6 text-center text-[12px] font-bold text-neutral-400">
-          This page updates live. Powered by Branvelo
+          This page updates live. <PoweredBy className="hover:text-neutral-600 hover:underline" />
         </p>
       </div>
     </div>

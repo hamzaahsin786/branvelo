@@ -12,6 +12,7 @@ import { createBrowserSupabase } from "@/lib/supabase-browser";
 import { apiFetch } from "@/lib/api";
 import { useTenantSlug } from "@/lib/tenant-context";
 import { ThemeStyle } from "./ThemeStyle";
+import { PoweredBy } from "./PoweredBy";
 import { CheckIcon } from "./icons";
 
 interface Props {
@@ -174,7 +175,7 @@ export function TrackClient({ order: initial, themePrimary }: Props) {
       </div>
 
       <p className="mt-6 text-center text-xs text-neutral-400">
-        Live updates - Powered by Branvelo
+        Live updates - <PoweredBy className="hover:text-neutral-600 hover:underline" />
       </p>
     </div>
   );

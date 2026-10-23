@@ -1,6 +1,7 @@
 import type { Tenant } from "@branvelo/shared";
 import { displayPkPhone, hoursSummary } from "@branvelo/shared";
 import { ClockIcon, PhoneIcon, PinIcon } from "./icons";
+import { PoweredBy } from "./PoweredBy";
 
 /** Footer: contact, hours, map link, help - plus the Branvelo bottom bar. */
 export function Footer({ tenant }: { tenant: Tenant }) {
@@ -64,7 +65,7 @@ export function Footer({ tenant }: { tenant: Tenant }) {
         </div>
       </div>
       <div className="bg-[var(--brand)] px-4 py-3 text-center text-xs font-bold uppercase tracking-widest text-white">
-        Powered by Branvelo
+        <PoweredBy className="hover:underline" />
       </div>
     </footer>
   );

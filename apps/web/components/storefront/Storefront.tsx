@@ -10,6 +10,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { slugFromHostname, tenantApiOrigin } from "@/lib/staff-api";
+import { PoweredBy } from "./PoweredBy";
 
 interface Theme {
   primary: string;
@@ -355,7 +356,7 @@ export function Storefront() {
 
         <FeedbackBlock primary={primary} />
 
-        <footer className="mt-10 text-center text-[12px] font-bold text-neutral-400">Powered by Branvelo</footer>
+        <footer className="mt-10 text-center text-[12px] font-bold text-neutral-400"><PoweredBy className="hover:text-neutral-600 hover:underline" /></footer>
       </main>
 
       {cartCount > 0 && !checkoutOpen && (
