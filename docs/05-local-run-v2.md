@@ -92,6 +92,12 @@ Staff side (per tenant, token auth):
   phases). Menu photos: `POST /api/staff/catalog/upload-photo` (multipart,
   field `file`, max 5 MB) returns a hosted URL.
 - Roles: owner/manager can write; other staff roles are read-only.
+- Settings at /admin/settings: restaurant profile, appearance (theme),
+  opening hours and delivery zones. Backed by
+  `GET/PATCH /api/staff/catalog/profile` (theme updates pass through the
+  same cleaner as signup) plus the zones viewset. This page replaced the
+  last v1-wired admin screen in 2026-10; the old /admin/orders/<id> path
+  now redirects to the orders board, where order detail lives.
 
 Customer side:
 - http://<slug>.localhost:3000 shows the restaurant's real storefront:

@@ -1,18 +1,18 @@
-import { notFound } from "next/navigation";
-import type { OrderRow, OrderStatusHistoryRow } from "@branvelo/shared";
-import { adminApiGet } from "@/lib/admin-server";
-import { OrderDetail } from "@/components/admin/OrderDetail";
+"use client";
 
-export default async function AdminOrderPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  let data: { order: OrderRow; history: OrderStatusHistoryRow[] };
-  try {
-    data = await adminApiGet(`/api/admin/orders/${params.id}`);
-  } catch {
-    notFound();
-  }
-  return <OrderDetail order={data.order} history={data.history} />;
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+/** Legacy v1 route. In v2, order detail lives inside the orders board
+ * (click any order), so this path simply forwards there. */
+export default function LegacyOrderDetailRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/admin");
+  }, [router]);
+  return (
+    <p className="text-sm font-semibold text-neutral-400">
+      Opening the orders board...
+    </p>
+  );
 }

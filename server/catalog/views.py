@@ -5,6 +5,7 @@ the tenant's catalog + menu photo upload. Public side: the single payload
 the storefront renders from (profile, theme, hours, menu, zones).
 """
 import uuid
+from datetime import time
 from pathlib import Path
 
 from django.conf import settings
@@ -118,6 +119,100 @@ class PhotoUploadView(APIView):
         saved = default_storage.save(name, upload)
         url = request.build_absolute_uri(settings.MEDIA_URL + saved)
         return Response({"url": url}, status=status.HTTP_201_CREATED)
+
+
+class StaffProfileView(APIView):
+    """GET/PATCH /api/staff/catalog/profile - the settings page's data:
+    restaurant profile, opening hours and theme in one payload. The
+    profile row is created at signup, one per tenant. Theme updates go
+    through the platform's single theme cleaner (tenants_app.api), so
+    the bounded token set is enforced here exactly as at signup."""
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsStaffWriter]
+
+    def _payload(self, profile):
+        return {
+            "name": profile.name,
+            "logo_url": profile.logo_url,
+            "phone": profile.phone,
+            "address": profile.address,
+            "city": profile.city,
+            "announcement": profile.announcement,
+            "is_open": profile.is_open,
+            "theme": profile.theme,
+            "hours": [
+                {
+                    "weekday": row.weekday,
+                    "open_time": row.open_time.strftime("%H:%M"),
+                    "close_time": row.close_time.strftime("%H:%M"),
+                    "is_closed": row.is_closed,
+                }
+                for row in OpeningHours.objects.all()
+            ],
+        }
+
+    def _profile_or_none(self):
+        return RestaurantProfile.objects.first()
+
+    def get(self, request):
+        profile = self._profile_or_none()
+        if profile is None:
+            return Response(
+                {"error": "Restaurant profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(self._payload(profile))
+
+    def patch(self, request):
+        profile = self._profile_or_none()
+        if profile is None:
+            return Response(
+                {"error": "Restaurant profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        data = request.data
+        limits = {
+            "name": 120,
+            "phone": 20,
+            "city": 80,
+            "address": None,
+            "announcement": None,
+            "logo_url": 200,
+        }
+        for field, limit in limits.items():
+            if field in data and isinstance(data[field], str):
+                value = data[field].strip()
+                if field == "name" and not value:
+                    continue
+                setattr(profile, field, value[:limit] if limit else value)
+        if "is_open" in data and isinstance(data["is_open"], bool):
+            profile.is_open = data["is_open"]
+        if "theme" in data:
+            from tenants_app.api import _clean_theme
+
+            profile.theme = _clean_theme(data["theme"])
+        profile.save()
+        hours = data.get("hours")
+        if isinstance(hours, list):
+            for row in hours:
+                if not isinstance(row, dict):
+                    continue
+                weekday = row.get("weekday")
+                if not isinstance(weekday, int) or not 0 <= weekday <= 6:
+                    continue
+                defaults = {"is_closed": bool(row.get("is_closed", False))}
+                for key in ("open_time", "close_time"):
+                    raw = row.get(key)
+                    if isinstance(raw, str):
+                        try:
+                            defaults[key] = time.fromisoformat(raw)
+                        except ValueError:
+                            pass
+                OpeningHours.objects.update_or_create(
+                    weekday=weekday, defaults=defaults
+                )
+        return Response(self._payload(profile))
 
 
 class StorefrontView(APIView):

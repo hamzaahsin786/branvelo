@@ -10,6 +10,7 @@ from catalog.views import (
     ModifierGroupViewSet,
     ModifierOptionViewSet,
     PhotoUploadView,
+    StaffProfileView,
 )
 
 router = DefaultRouter(trailing_slash=False)
@@ -22,5 +23,6 @@ router.register("coupons", CouponViewSet)
 
 urlpatterns = [
     path("upload-photo", PhotoUploadView.as_view()),
+    path("profile", StaffProfileView.as_view()),
     *router.urls,
 ]
