@@ -372,15 +372,19 @@ class ImagePreviewView(_ImportView):
 
 def _gemini_models():
     """Vision models to try, in order. Google retires model names over
-    time (a retired name returns 404), so the default is followed by
-    fallbacks; GEMINI_MODEL in the server environment pins the first
-    choice without a code change."""
+    time, and gates older generations from NEW API users (a gated name
+    returns 404 "no longer available to new users" even though
+    ListModels still lists it), so the defaults are current-generation
+    models followed by fallbacks. GEMINI_MODEL in the server
+    environment pins the first choice without a code change. Verified
+    live 2026-10-23 with a new-user key: gemini-3.5-flash answers,
+    gemini-2.5-flash 404s as new-user-gated."""
     models = []
     pinned = os.environ.get("GEMINI_MODEL", "").strip()
     if pinned:
         models.append(pinned)
-    for name in ("gemini-2.5-flash", "gemini-2.5-flash-lite",
-                 "gemini-flash-latest"):
+    for name in ("gemini-3.5-flash", "gemini-3.8-flash",
+                 "gemini-3.1-flash-lite"):
         if name not in models:
             models.append(name)
     return models
@@ -461,8 +465,17 @@ def _gemini_extract(api_key, files):
             "keeps happening, check the server internet connection."
         )
     try:
-        text = payload["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError, TypeError):
+        parts_out = payload["candidates"][0]["content"]["parts"]
+        # Current models may return "thought" parts before the answer;
+        # the answer is the non-thought text.
+        text = "".join(
+            p.get("text", "")
+            for p in parts_out
+            if isinstance(p, dict) and not p.get("thought")
+        ).strip()
+        if not text:
+            text = parts_out[0].get("text", "")
+    except (KeyError, IndexError, TypeError, AttributeError):
         raise ValueError(
             "The photo reader could not read these photos. "
             "Try clearer photos."
