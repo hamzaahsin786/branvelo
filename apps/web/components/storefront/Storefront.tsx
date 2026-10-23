@@ -59,6 +59,7 @@ interface StorefrontData {
   profile: {
     name: string;
     logo_url: string;
+    cover_url: string;
     phone: string;
     address: string;
     city: string;
@@ -130,6 +131,54 @@ export function Storefront() {
       );
     } catch { /* storage unavailable */ }
   }, [cart]);
+
+  const [query, setQuery] = useState("");
+  const [activeCat, setActiveCat] = useState<number | null>(null);
+
+  const visibleCategories = useMemo(() => {
+    if (!data) return [];
+    const q = query.trim().toLowerCase();
+    if (!q) return data.categories;
+    return data.categories
+      .map((c) => ({
+        ...c,
+        items: c.items.filter((i) =>
+          `${i.name} ${i.description}`.toLowerCase().includes(q),
+        ),
+      }))
+      .filter((c) => c.items.length > 0);
+  }, [data, query]);
+  const searchCount = visibleCategories.reduce(
+    (n, c) => n + c.items.length,
+    0,
+  );
+
+  // Scroll-spy: keep the sticky category pill for the section currently
+  // in view highlighted.
+  useEffect(() => {
+    if (state !== "ready" || query) return;
+    const sections = document.querySelectorAll<HTMLElement>("[data-cat-id]");
+    if (!sections.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setActiveCat(Number(e.target.getAttribute("data-cat-id")));
+          }
+        }
+      },
+      { rootMargin: "-150px 0px -65% 0px" },
+    );
+    sections.forEach((s) => observer.observe(s));
+    return () => observer.disconnect();
+  }, [state, data, query]);
+
+  const scrollToCat = (id: number) => {
+    setActiveCat(id);
+    document
+      .getElementById(`cat-${id}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const featured = useMemo(() => {
     if (!data) return [];
@@ -215,19 +264,31 @@ export function Storefront() {
         </div>
       )}
 
-      <header className="border-b border-neutral-100 bg-white">
-        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-4">
+      <header className="relative overflow-hidden text-white" style={{ backgroundColor: primary }}>
+        {profile.cover_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        )}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: profile.cover_url
+              ? "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.15) 100%)"
+              : `linear-gradient(120deg, ${primary} 0%, color-mix(in srgb, ${primary} 52%, #0B0930) 100%)`,
+          }}
+        />
+        <div className="relative mx-auto flex max-w-4xl items-end gap-3 px-4 pb-5 pt-12">
           {profile.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.logo_url} alt={profile.name} className="h-12 w-12 rounded-2xl object-cover" />
+            <img src={profile.logo_url} alt={profile.name} className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-white/50" />
           ) : (
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl text-xl font-black text-white" style={{ backgroundColor: primary }}>
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl font-black text-white ring-2 ring-white/40">
               {profile.name.charAt(0).toUpperCase()}
             </span>
           )}
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-black">{profile.name}</h1>
-            <p className="text-[13px] font-semibold text-neutral-500">
+          <div className="min-w-0 pb-0.5">
+            <h1 className="truncate text-2xl font-black drop-shadow-sm">{profile.name}</h1>
+            <p className="text-[13px] font-semibold text-white/85">
               {profile.city}
               {todayHours && !todayHours.is_closed
                 ? ` - Open today ${todayHours.open}-${todayHours.close}`
@@ -236,11 +297,45 @@ export function Storefront() {
                   : ""}
             </p>
           </div>
-          <span className={`ml-auto shrink-0 rounded-full px-3 py-1 text-[12px] font-extrabold ${profile.is_open ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+          <span className={`mb-1 ml-auto shrink-0 rounded-full px-3 py-1 text-[12px] font-extrabold ${profile.is_open ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
             {profile.is_open ? "Open" : "Closed"}
           </span>
         </div>
       </header>
+
+      <div className="sticky top-0 z-30 border-b border-neutral-100 bg-[#FAFAFF]/95 backdrop-blur">
+        <div className="mx-auto max-w-4xl px-4 py-2.5">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search the menu..."
+            className="w-full rounded-full bg-white px-4 py-2 text-sm font-semibold outline-none ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-300"
+          />
+          {!query && categories.length > 1 && (
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => scrollToCat(cat.id)}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-bold ${
+                    activeCat === cat.id
+                      ? "text-white"
+                      : "bg-white text-neutral-600 ring-1 ring-neutral-200"
+                  }`}
+                  style={activeCat === cat.id ? { backgroundColor: primary } : undefined}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {query && (
+            <p className="mt-1.5 text-[12px] font-semibold text-neutral-400">
+              {searchCount} item{searchCount === 1 ? "" : "s"} found
+            </p>
+          )}
+        </div>
+      </div>
 
       <main className="mx-auto max-w-4xl px-4">
         {!profile.is_open && (
@@ -249,20 +344,13 @@ export function Storefront() {
           </p>
         )}
 
-        {theme.sections.featured && featured.length > 0 && (
+        {theme.sections.featured && !query && featured.length > 0 && (
           <section className="mt-6">
             <h2 className="text-base font-black">Featured</h2>
             <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
               {featured.map((item) => (
                 <div key={item.id} className="w-44 shrink-0 overflow-hidden rounded-2xl bg-white ring-1 ring-neutral-100">
-                  {item.photo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.photo_url} alt={item.name} className="h-24 w-full object-cover" />
-                  ) : (
-                    <div className="flex h-24 items-center justify-center text-2xl font-black text-white" style={{ backgroundColor: primary }}>
-                      {item.name.charAt(0)}
-                    </div>
-                  )}
+                  <PhotoTile item={item} primary={primary} className="h-24 w-full" />
                   <div className="p-3">
                     <p className="truncate text-sm font-extrabold">{item.name}</p>
                     <div className="mt-1 flex items-center justify-between">
@@ -282,22 +370,21 @@ export function Storefront() {
           </p>
         )}
 
-        {categories.map((cat) => (
-          <section key={cat.id} className="mt-8">
+        {query && searchCount === 0 && (
+          <p className="mt-10 text-center text-sm font-semibold text-neutral-400">
+            Nothing on the menu matches "{query}".
+          </p>
+        )}
+
+        {visibleCategories.map((cat) => (
+          <section key={cat.id} id={`cat-${cat.id}`} data-cat-id={cat.id} className="mt-8 scroll-mt-36">
             <h2 className="text-base font-black">{cat.name}</h2>
             {cat.tagline && <p className="text-[13px] font-semibold text-neutral-500">{cat.tagline}</p>}
             <div className={theme.layout === "grid" ? "mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3" : "mt-3 flex flex-col gap-3"}>
               {cat.items.map((item) =>
                 theme.layout === "grid" ? (
                   <article key={item.id} className="overflow-hidden rounded-2xl bg-white ring-1 ring-neutral-100">
-                    {item.photo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.photo_url} alt={item.name} className="h-28 w-full object-cover" />
-                    ) : (
-                      <div className="flex h-28 items-center justify-center text-3xl font-black text-white" style={{ backgroundColor: primary }}>
-                        {item.name.charAt(0)}
-                      </div>
-                    )}
+                    <PhotoTile item={item} primary={primary} className="h-28 w-full" />
                     <div className="p-3">
                       <ItemText item={item} primary={primary} />
                       <div className="mt-2 flex justify-end">
@@ -307,16 +394,15 @@ export function Storefront() {
                   </article>
                 ) : (
                   <article key={item.id} className="flex gap-3 rounded-2xl bg-white p-3 ring-1 ring-neutral-100">
+                    {theme.layout === "classic" && (
+                      <PhotoTile item={item} primary={primary} className="h-20 w-20 shrink-0 rounded-xl" />
+                    )}
                     <div className="min-w-0 flex-1">
                       <ItemText item={item} primary={primary} />
                       <div className="mt-2">
                         <AddButton primary={primary} disabled={!profile.is_open} onClick={() => startAdd(item)} />
                       </div>
                     </div>
-                    {theme.layout === "classic" && item.photo_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.photo_url} alt={item.name} className="h-20 w-20 shrink-0 rounded-xl object-cover" />
-                    )}
                   </article>
                 ),
               )}
@@ -390,6 +476,39 @@ export function Storefront() {
           onClose={() => setCheckoutOpen(false)}
         />
       )}
+    </div>
+  );
+}
+
+/** Item photo, or a branded gradient tile with the item's initial when
+ * the restaurant has not added a photo yet - so a menu imported from a
+ * sheet or a photo still looks deliberate, never broken. */
+function PhotoTile({
+  item,
+  primary,
+  className,
+}: {
+  item: Item;
+  primary: string;
+  className: string;
+}) {
+  if (item.photo_url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={item.photo_url} alt={item.name} className={`${className} object-cover`} />
+    );
+  }
+  return (
+    <div
+      className={`${className} flex items-center justify-center`}
+      style={{
+        background: `linear-gradient(135deg, ${primary} 0%, color-mix(in srgb, ${primary} 50%, #0B0930) 100%)`,
+      }}
+      aria-hidden
+    >
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-lg font-black text-white">
+        {item.name.charAt(0).toUpperCase()}
+      </span>
     </div>
   );
 }

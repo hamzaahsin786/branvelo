@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { Category, MenuItem } from "@branvelo/shared";
 import { formatRs } from "@branvelo/shared";
-import { useStaffApi } from "@/lib/staff-api";
+import { uploadStaffPhoto, useStaffApi } from "@/lib/staff-api";
 
 interface Props {
   initialCategories: Category[];
@@ -62,6 +62,20 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
   const fail = (e: unknown, fallback: string) => {
     setError(e instanceof Error ? e.message : fallback);
     setTimeout(() => setError(null), 4000);
+  };
+
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const handlePhotoUpload = async (file: File | null) => {
+    if (!file || !drawer) return;
+    setPhotoBusy(true);
+    try {
+      const url = await uploadStaffPhoto(file);
+      setDrawer((d) => (d ? { ...d, photo_url: url } : d));
+    } catch (e) {
+      fail(e, "Photo upload failed");
+    } finally {
+      setPhotoBusy(false);
+    }
   };
 
   // ── categories ──
@@ -388,12 +402,33 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
                   />
                 </label>
               </div>
-              <input
-                value={drawer.photo_url}
-                onChange={(e) => setDrawer({ ...drawer, photo_url: e.target.value })}
-                placeholder="Photo URL (optional)"
-                className={inputCls}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  value={drawer.photo_url}
+                  onChange={(e) => setDrawer({ ...drawer, photo_url: e.target.value })}
+                  placeholder="Photo URL (optional)"
+                  className={inputCls}
+                />
+                <label className="shrink-0 cursor-pointer rounded-full bg-neutral-100 px-4 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-200">
+                  {photoBusy ? "Uploading..." : "Upload"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) =>
+                      handlePhotoUpload(e.target.files?.[0] ?? null)
+                    }
+                  />
+                </label>
+                {drawer.photo_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={drawer.photo_url}
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-neutral-200"
+                  />
+                )}
+              </div>
               <div>
                 <p className="text-sm font-semibold">Badges</p>
                 <div className="mt-1 flex gap-2">

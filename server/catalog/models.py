@@ -24,6 +24,10 @@ def default_theme():
 class RestaurantProfile(models.Model):
     name = models.CharField(max_length=120)
     logo_url = models.URLField(blank=True)
+    cover_url = models.URLField(
+        blank=True,
+        help_text="Wide banner photo for the storefront hero (optional).",
+    )
     phone = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     city = models.CharField(max_length=80, blank=True)

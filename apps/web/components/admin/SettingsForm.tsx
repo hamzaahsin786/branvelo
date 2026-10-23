@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { formatRs } from "@branvelo/shared";
-import { useStaffApi } from "@/lib/staff-api";
+import { uploadStaffPhoto, useStaffApi } from "@/lib/staff-api";
 
 export interface Theme {
   primary: string;
@@ -22,6 +22,7 @@ export interface HoursRow {
 export interface ProfilePayload {
   name: string;
   logo_url: string;
+  cover_url: string;
   phone: string;
   address: string;
   city: string;
@@ -105,6 +106,25 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
   const [city, setCity] = useState(initialProfile.city);
   const [announcement, setAnnouncement] = useState(initialProfile.announcement);
   const [isOpen, setIsOpen] = useState(initialProfile.is_open);
+  const [logoUrl, setLogoUrl] = useState(initialProfile.logo_url);
+  const [coverUrl, setCoverUrl] = useState(initialProfile.cover_url ?? "");
+  const [uploading, setUploading] = useState<"logo" | "cover" | null>(null);
+
+  async function handleUpload(kind: "logo" | "cover", file: File | null) {
+    if (!file) return;
+    setError(null);
+    setUploading(kind);
+    try {
+      const url = await uploadStaffPhoto(file);
+      if (kind === "logo") setLogoUrl(url);
+      else setCoverUrl(url);
+      flash("Photo uploaded. Press Save restaurant to publish it.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Photo upload failed");
+    } finally {
+      setUploading(null);
+    }
+  }
 
   // Appearance
   const [theme, setTheme] = useState<Theme>(normalizeTheme(initialProfile.theme));
@@ -159,6 +179,8 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
         city: city.trim(),
         announcement: announcement.trim(),
         is_open: isOpen,
+        logo_url: logoUrl.trim(),
+        cover_url: coverUrl.trim(),
       },
       "Restaurant details saved.",
     );
@@ -292,6 +314,68 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
             placeholder="Announcement banner (e.g. Open till 4:30 AM)"
             className={inputCls}
           />
+          <div>
+            <span className="text-sm font-semibold">Logo</span>
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="Logo image URL (or upload)"
+                className={inputCls}
+              />
+              <label className="shrink-0 cursor-pointer rounded-full bg-neutral-100 px-4 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-200">
+                {uploading === "logo" ? "Uploading..." : "Upload"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) =>
+                    handleUpload("logo", e.target.files?.[0] ?? null)
+                  }
+                />
+              </label>
+              {logoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoUrl}
+                  alt=""
+                  className="h-10 w-10 shrink-0 rounded-xl object-cover ring-1 ring-neutral-200"
+                />
+              )}
+            </div>
+          </div>
+          <div>
+            <span className="text-sm font-semibold">
+              Cover photo (storefront banner)
+            </span>
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                value={coverUrl}
+                onChange={(e) => setCoverUrl(e.target.value)}
+                placeholder="Cover image URL (or upload) - a wide food photo works best"
+                className={inputCls}
+              />
+              <label className="shrink-0 cursor-pointer rounded-full bg-neutral-100 px-4 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-200">
+                {uploading === "cover" ? "Uploading..." : "Upload"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) =>
+                    handleUpload("cover", e.target.files?.[0] ?? null)
+                  }
+                />
+              </label>
+            </div>
+            {coverUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coverUrl}
+                alt=""
+                className="mt-2 h-28 w-full rounded-xl object-cover ring-1 ring-neutral-200"
+              />
+            )}
+          </div>
           <label className="flex items-center gap-2 text-sm font-semibold">
             <input
               type="checkbox"

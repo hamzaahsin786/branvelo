@@ -82,6 +82,22 @@ export async function staffFetch(
   return fetch(`${tenantApiOrigin()}${path}`, { ...init, headers });
 }
 
+/** Upload a photo (item, logo, cover) to the tenant's media storage and
+ * return its public URL. Used by Settings and the Menu Manager. */
+export async function uploadStaffPhoto(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await staffFetch("/api/staff/catalog/upload-photo", {
+    method: "POST",
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || data.detail || "Photo upload failed.");
+  }
+  return data.url as string;
+}
+
 /**
  * Drop-in replacement for the v1 useAuthedApi hook, against the Django
  * staff API. Paths are Django paths (e.g. /api/staff/catalog/items).

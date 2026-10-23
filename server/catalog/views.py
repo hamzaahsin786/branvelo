@@ -135,6 +135,7 @@ class StaffProfileView(APIView):
         return {
             "name": profile.name,
             "logo_url": profile.logo_url,
+            "cover_url": profile.cover_url,
             "phone": profile.phone,
             "address": profile.address,
             "city": profile.city,
@@ -179,6 +180,7 @@ class StaffProfileView(APIView):
             "address": None,
             "announcement": None,
             "logo_url": 200,
+            "cover_url": 500,
         }
         for field, limit in limits.items():
             if field in data and isinstance(data[field], str):
@@ -274,6 +276,7 @@ class StorefrontView(APIView):
                 "profile": {
                     "name": profile.name,
                     "logo_url": profile.logo_url,
+                    "cover_url": profile.cover_url,
                     "phone": profile.phone,
                     "address": profile.address,
                     "city": profile.city,

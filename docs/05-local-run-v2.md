@@ -90,7 +90,15 @@ Staff side (per tenant, token auth):
   Django staff API (`/api/staff/catalog/...`). Modifier groups/options,
   delivery zones and coupons are in the same API (UI lands with later
   phases). Menu photos: `POST /api/staff/catalog/upload-photo` (multipart,
-  field `file`, max 5 MB) returns a hosted URL.
+  field `file`, max 5 MB) returns a hosted URL; the item form, the
+  Settings logo field and the Settings cover field all have an Upload
+  button wired to it.
+- Storefront: brand hero (the profile's optional `cover_url` banner
+  photo over a dark gradient, or a brand-colour gradient when no cover
+  is set), a sticky bar with menu search and category pills with
+  scroll-spy, and item cards that fall back to a branded gradient tile
+  with the item's initial when no photo exists - so imported menus
+  (names + prices only) still look deliberate.
 - Roles: owner/manager can write; other staff roles are read-only.
 - Settings at /admin/settings: restaurant profile, appearance (theme),
   opening hours and delivery zones. Backed by
