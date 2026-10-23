@@ -431,7 +431,7 @@ def _gemini_extract(api_key, files):
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=60) as resp:
+            with urllib.request.urlopen(request, timeout=30) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))
             break
         except urllib.error.HTTPError as exc:
@@ -447,18 +447,18 @@ def _gemini_extract(api_key, files):
                 f"The photo reader returned an error ({exc.code}){detail} "
                 "Check the Gemini API key and try again."
             )
-        except Exception:
-            raise ValueError(
-                "Could not reach the photo reader. Check the server "
-                "connection and try again."
-            )
+        except Exception as exc:
+            # Timeout or network failure on this model - it is often the
+            # overloaded model hanging rather than a dead connection, so
+            # record it and let the next model try.
+            last_error = f"connection problem ({type(exc).__name__})"
+            continue
     if payload is None:
         detail = f": {last_error}" if last_error else ""
         raise ValueError(
-            "The photo reader is busy or unavailable on every model "
-            f"right now{detail} Please wait a minute and try again. "
-            "If this keeps happening, set GEMINI_MODEL in the server "
-            "settings to a current Gemini vision model."
+            "The photo reader did not answer on any model right "
+            f"now{detail}. Please wait a minute and try again; if it "
+            "keeps happening, check the server internet connection."
         )
     try:
         text = payload["candidates"][0]["content"]["parts"][0]["text"]
