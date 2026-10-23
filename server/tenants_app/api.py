@@ -1,11 +1,14 @@
 """Public platform API (served from the public schema): restaurant signup
 and slug availability. These endpoints are how the marketing site's signup
-form creates a tenant — they call the same provisioning function as the
+form creates a tenant - they call the same provisioning function as the
 `provision_tenant` CLI.
 """
 import re
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core import signing
+from django_tenants.utils import schema_context
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -14,6 +17,10 @@ from rest_framework.views import APIView
 
 from catalog.models import DEFAULT_THEME
 from tenants_app import provisioning
+from tenants_app.models import Tenant
+
+HANDOFF_SALT = "branvelo.platform-handoff"
+HANDOFF_MAX_AGE = 120  # seconds; the browser redirect is immediate
 
 _HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 _FONTS = {"nunito", "poppins", "inter"}
@@ -55,7 +62,7 @@ class SignupSerializer(serializers.Serializer):
 
 
 class SignupView(APIView):
-    """POST /api/platform/signup — create a restaurant (tenant + schema +
+    """POST /api/platform/signup - create a restaurant (tenant + schema +
     domain + trial subscription + owner account + seeded profile)."""
 
     permission_classes = [AllowAny]
@@ -101,7 +108,7 @@ class SignupView(APIView):
 
 
 class SlugCheckView(APIView):
-    """GET /api/platform/slug-check?slug=foo — live availability for the
+    """GET /api/platform/slug-check?slug=foo - live availability for the
     signup form. Always 200; the payload carries the verdict."""
 
     permission_classes = [AllowAny]
@@ -125,3 +132,63 @@ class SlugCheckView(APIView):
                 }
             )
         return Response({"slug": normalized, "available": True})
+
+
+class PlatformLoginView(APIView):
+    """POST /api/platform/login {email, password} -> {slug, handoff}.
+
+    Central sign-in for restaurant OWNERS on the platform site. The email
+    identifies the tenant (owner_email is unique platform-wide); the
+    password is checked against the owner account inside that tenant's
+    schema. On success the browser is sent to the tenant subdomain with a
+    short-lived signed handoff, which /api/staff/exchange swaps for the
+    normal staff token. Every failure returns the same generic message so
+    the endpoint cannot be used to probe which emails have accounts.
+    Staff (manager/cashier/kitchen/rider) sign in on the restaurant's own
+    address as before: the platform cannot know their tenant from an
+    email alone.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "platform_login"
+
+    def post(self, request):
+        failure = Response(
+            {"detail": "Invalid email or password."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+        email = request.data.get("email")
+        password = request.data.get("password")
+        if not isinstance(email, str) or not isinstance(password, str):
+            return failure
+        email = email.strip().lower()
+        if not email or not password:
+            return failure
+        tenant = Tenant.objects.filter(owner_email__iexact=email).first()
+        if tenant is None:
+            return failure
+        with schema_context(tenant.schema_name):
+            user = (
+                get_user_model()
+                .objects.filter(username__iexact=email)
+                .first()
+            )
+            if (
+                user is None
+                or not user.is_active
+                or not user.check_password(password)
+            ):
+                return failure
+            profile = getattr(user, "staff_profile", None)
+            if (
+                profile is None
+                or not profile.is_active_staff
+                or profile.role != "owner"
+            ):
+                return failure
+            handoff = signing.dumps(
+                {"t": tenant.schema_name, "u": user.pk},
+                salt=HANDOFF_SALT,
+            )
+        return Response({"slug": tenant.slug, "handoff": handoff})

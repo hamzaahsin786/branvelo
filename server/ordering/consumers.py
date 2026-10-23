@@ -56,7 +56,7 @@ def _order_exists(schema_name: str, order_id: str) -> bool:
 
 
 class AdminOrdersConsumer(AsyncWebsocketConsumer):
-    """ws/admin/orders?token=... — every order event for this tenant."""
+    """ws/admin/orders?token=... - every order event for this tenant."""
 
     async def connect(self):
         headers = dict(self.scope.get("headers") or [])
@@ -83,7 +83,7 @@ class AdminOrdersConsumer(AsyncWebsocketConsumer):
 
 
 class OrderTrackConsumer(AsyncWebsocketConsumer):
-    """ws/track/<order-uuid> — status changes for one order (public)."""
+    """ws/track/<order-uuid> - status changes for one order (public)."""
 
     async def connect(self):
         headers = dict(self.scope.get("headers") or [])

@@ -4,8 +4,8 @@ const TENANT_HEADER = "x-tenant-slug";
 
 /**
  * Tenant resolution order:
- *  1. Subdomain — usama.branvelo.com / usama.localhost
- *  2. Path prefix — /t/<slug>/...
+ *  1. Subdomain - usama.branvelo.com / usama.localhost
+ *  2. Path prefix - /t/<slug>/...
  *  3. DEFAULT_TENANT_SLUG env (dev fallback, 'usama-burgers')
  *
  * The resolved slug is set on the x-tenant-slug request header.
@@ -29,7 +29,7 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // 2) /t/<slug> path prefix → rewrite to strip it
+  // 2) /t/<slug> path prefix -> rewrite to strip it
   let rewriteTo: URL | null = null;
   const pathMatch = url.pathname.match(/^\/t\/([^/]+)(\/.*)?$/);
   if (pathMatch) {

@@ -1,6 +1,6 @@
 /**
  * @branvelo/shared - order state machine.
- * placed → confirmed → preparing → ready → dispatched → delivered
+ * placed -> confirmed -> preparing -> ready -> dispatched -> delivered
  * (cancelled / refunded branch off from any non-terminal state)
  */
 import type { OrderStatus } from "./types";

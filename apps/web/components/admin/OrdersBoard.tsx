@@ -153,7 +153,7 @@ export function OrdersBoard() {
                 document.hidden
               ) {
                 new Notification(`New order #${incoming.order_no}`, {
-                  body: `${incoming.customer_name} · ${formatRs(incoming.total_pkr)}`,
+                  body: `${incoming.customer_name} - ${formatRs(incoming.total_pkr)}`,
                 });
               }
             } catch { /* notifications unsupported */ }
@@ -227,7 +227,7 @@ export function OrdersBoard() {
           Enable alerts
         </button>
         <span className="text-sm font-bold text-neutral-500">
-          {activeCount} active · {formatRs(revenue)} today{date === todayStr() ? "" : ` (${date})`}
+          {activeCount} active - {formatRs(revenue)} today{date === todayStr() ? "" : ` (${date})`}
         </span>
         <input
           type="date"
@@ -263,7 +263,7 @@ export function OrdersBoard() {
                   {order.type}
                 </span>
                 <span className="text-sm font-bold text-neutral-500">
-                  {order.customer_name} · {order.customer_phone}
+                  {order.customer_name} - {order.customer_phone}
                 </span>
                 <span className="ml-auto text-sm font-black">{formatRs(order.total_pkr)}</span>
                 <span className="text-[12px] font-semibold text-neutral-400">
@@ -292,25 +292,25 @@ export function OrdersBoard() {
               {isOpen && (
                 <div className="mt-3 border-t border-neutral-100 pt-3">
                   {!detail ? (
-                    <p className="text-sm font-semibold text-neutral-400">Loading details…</p>
+                    <p className="text-sm font-semibold text-neutral-400">Loading details...</p>
                   ) : (
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         {detail.items.map((line, i) => (
                           <p key={i} className="text-sm font-semibold text-neutral-700">
-                            {line.qty} × {line.name} — {formatRs(line.line_total_pkr)}
+                            {line.qty} × {line.name} - {formatRs(line.line_total_pkr)}
                             {line.modifiers.length > 0 && (
                               <span className="block text-[12px] font-semibold text-neutral-400">
-                                {line.modifiers.map((m) => `${m.group}: ${m.name}`).join(" · ")}
+                                {line.modifiers.map((m) => `${m.group}: ${m.name}`).join(" - ")}
                               </span>
                             )}
                           </p>
                         ))}
                         <p className="mt-2 text-[13px] font-semibold text-neutral-500">
                           Subtotal {formatRs(detail.subtotal_pkr)}
-                          {detail.discount_pkr > 0 && ` · Discount −${formatRs(detail.discount_pkr)} (${detail.coupon_code || "coupon"})`}
-                          {detail.type === "delivery" && ` · Delivery ${detail.delivery_fee_pkr === 0 ? "free" : formatRs(detail.delivery_fee_pkr)}`}
-                          {` · ${detail.payment_method === "cod" ? "Cash on delivery" : detail.payment_method}`}
+                          {detail.discount_pkr > 0 && ` - Discount -${formatRs(detail.discount_pkr)} (${detail.coupon_code || "coupon"})`}
+                          {detail.type === "delivery" && ` - Delivery ${detail.delivery_fee_pkr === 0 ? "free" : formatRs(detail.delivery_fee_pkr)}`}
+                          {` - ${detail.payment_method === "cod" ? "Cash on delivery" : detail.payment_method}`}
                         </p>
                         {detail.customer_address && (
                           <p className="mt-1 text-[13px] font-semibold text-neutral-500">{detail.customer_address}</p>
@@ -328,7 +328,7 @@ export function OrdersBoard() {
                         <p className="text-[12px] font-extrabold uppercase tracking-wide text-neutral-400">History</p>
                         {detail.history.map((h, i) => (
                           <p key={i} className="text-[13px] font-semibold text-neutral-500">
-                            {h.from_status ? `${h.from_status} → ` : ""}{h.to_status} · {h.actor} ·{" "}
+                            {h.from_status ? `${h.from_status} -> ` : ""}{h.to_status} - {h.actor} -{" "}
                             {new Date(h.created_at).toLocaleTimeString("en-PK", { hour: "numeric", minute: "2-digit" })}
                           </p>
                         ))}

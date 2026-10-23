@@ -155,8 +155,8 @@ export function OrderFeed({
                 </div>
                 <p className="mt-1 text-sm font-medium">{o.customer_name}</p>
                 <p className="text-xs text-neutral-500">
-                  {o.type === "delivery" ? "Delivery" : "Pick-Up"} ·{" "}
-                  {o.items.reduce((n, it) => n + it.qty, 0)} items ·{" "}
+                  {o.type === "delivery" ? "Delivery" : "Pick-Up"} -{" "}
+                  {o.items.reduce((n, it) => n + it.qty, 0)} items -{" "}
                   {new Date(o.created_at).toLocaleTimeString("en-PK", {
                     hour: "numeric",
                     minute: "2-digit",

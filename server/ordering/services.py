@@ -1,6 +1,6 @@
 """Checkout: the one place orders are created.
 
-Every price is recomputed from the database — client-sent totals are
+Every price is recomputed from the database - client-sent totals are
 never trusted. Rules (ported from v1, per docs/04): zone minimums and
 free-delivery thresholds, coupon validity window + usage caps, modifier
 min/max selection rules.

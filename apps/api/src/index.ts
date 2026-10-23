@@ -36,7 +36,7 @@ async function main() {
   await app.register(cors, {
     origin: env.WEB_ORIGIN,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-    // x-tenant-slug + Authorization are custom headers → allow them
+    // x-tenant-slug + Authorization are custom headers -> allow them
     allowedHeaders: ["Content-Type", "Authorization", "x-tenant-slug"],
   });
 
@@ -53,7 +53,7 @@ async function main() {
     }
   });
 
-  // Rate limiting. global:false → only routes with an explicit config are
+  // Rate limiting. global:false -> only routes with an explicit config are
   // limited (/health has none, so keep-warm pings can never 429).
   await app.register(rateLimit, {
     global: false,

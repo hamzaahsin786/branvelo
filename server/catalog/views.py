@@ -121,7 +121,7 @@ class PhotoUploadView(APIView):
 
 
 class StorefrontView(APIView):
-    """GET /api/storefront/ — everything the storefront page renders, in
+    """GET /api/storefront/ - everything the storefront page renders, in
     one payload. The tenant comes from the request hostname; the public
     schema has no storefront."""
 

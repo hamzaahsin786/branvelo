@@ -90,7 +90,7 @@ export function FeedbackForm() {
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Share your experience…"
+              placeholder="Share your experience..."
               rows={4}
               className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)]"
             />
@@ -126,7 +126,7 @@ export function FeedbackForm() {
               disabled={status === "sending"}
               className="rounded-full bg-[var(--brand)] py-3 font-bold text-white disabled:opacity-50"
             >
-              {status === "sending" ? "Sending…" : "Submit Feedback"}
+              {status === "sending" ? "Sending..." : "Submit Feedback"}
             </button>
           </div>
         )}

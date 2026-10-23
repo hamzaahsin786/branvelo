@@ -2,7 +2,7 @@
 
 /**
  * Storefront (v2): renders one restaurant from the Django storefront
- * payload — profile, theme, hours, menu, zones — and takes orders.
+ * payload - profile, theme, hours, menu, zones - and takes orders.
  *
  * The theme is data (color, font, layout variant, sections from the
  * tenant profile). The cart lives in this page; checkout posts to the
@@ -161,7 +161,7 @@ export function Storefront() {
   if (state === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#FAFAFF]">
-        <p className="text-sm font-semibold text-neutral-400">Loading menu…</p>
+        <p className="text-sm font-semibold text-neutral-400">Loading menu...</p>
       </div>
     );
   }
@@ -229,9 +229,9 @@ export function Storefront() {
             <p className="text-[13px] font-semibold text-neutral-500">
               {profile.city}
               {todayHours && !todayHours.is_closed
-                ? ` · Open today ${todayHours.open}–${todayHours.close}`
+                ? ` - Open today ${todayHours.open}-${todayHours.close}`
                 : todayHours
-                  ? " · Closed today"
+                  ? " - Closed today"
                   : ""}
             </p>
           </div>
@@ -337,7 +337,7 @@ export function Storefront() {
               <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-4">
                 {hours.map((h) => (
                   <p key={h.weekday} className={`text-[13px] font-semibold ${h.weekday === today ? "text-neutral-900" : "text-neutral-500"}`}>
-                    {DAY_NAMES[h.weekday]}: {h.is_closed ? "Closed" : `${h.open}–${h.close}`}
+                    {DAY_NAMES[h.weekday]}: {h.is_closed ? "Closed" : `${h.open}-${h.close}`}
                   </p>
                 ))}
               </div>
@@ -347,7 +347,7 @@ export function Storefront() {
                 Delivery:{" "}
                 {zones
                   .map((z) => `${z.name} (${z.fee_pkr === 0 ? "free" : formatRs(z.fee_pkr)}${z.min_order_pkr ? `, min ${formatRs(z.min_order_pkr)}` : ""})`)
-                  .join(" · ")}
+                  .join(" - ")}
               </p>
             )}
           </section>
@@ -365,7 +365,7 @@ export function Storefront() {
           style={{ backgroundColor: primary }}
         >
           <span>{cartCount} item{cartCount > 1 ? "s" : ""} in cart</span>
-          <span>{formatRs(cartSubtotal)} · Checkout</span>
+          <span>{formatRs(cartSubtotal)} - Checkout</span>
         </button>
       )}
 
@@ -420,7 +420,7 @@ function ItemText({ item, primary }: { item: Item; primary: string }) {
       {item.description && <p className="mt-0.5 line-clamp-2 text-[13px] font-medium text-neutral-500">{item.description}</p>}
       <p className="mt-1 text-sm font-black" style={{ color: primary }}>{formatRs(item.price)}</p>
       {item.modifier_groups.length > 0 && (
-        <p className="mt-0.5 text-[12px] font-semibold text-neutral-400">{item.modifier_groups.map((g) => g.name).join(" · ")} available</p>
+        <p className="mt-0.5 text-[12px] font-semibold text-neutral-400">{item.modifier_groups.map((g) => g.name).join(" - ")} available</p>
       )}
     </>
   );
@@ -473,7 +473,7 @@ function ModifierSheet({
             <h3 className="text-base font-black">{item.name}</h3>
             <p className="text-sm font-bold" style={{ color: primary }}>{formatRs(item.price)}</p>
           </div>
-          <button onClick={onClose} className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-bold">✕</button>
+          <button onClick={onClose} aria-label="Close" className="rounded-full bg-neutral-100 px-3 py-1.5 text-sm font-bold"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="block"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg></button>
         </div>
         {item.modifier_groups.map((group) => (
           <div key={group.id} className="mt-4">
@@ -504,7 +504,7 @@ function ModifierSheet({
         ))}
         <div className="mt-5 flex items-center gap-3">
           <div className="flex items-center gap-2 rounded-full ring-1 ring-neutral-200">
-            <button onClick={() => setQty(Math.max(1, qty - 1))} className="px-3 py-2 font-black">−</button>
+            <button onClick={() => setQty(Math.max(1, qty - 1))} className="px-3 py-2 font-black">-</button>
             <span className="min-w-5 text-center text-sm font-extrabold">{qty}</span>
             <button onClick={() => setQty(Math.min(50, qty + 1))} className="px-3 py-2 font-black">+</button>
           </div>
@@ -514,7 +514,7 @@ function ModifierSheet({
             className="flex-1 rounded-full py-3 text-sm font-extrabold text-white disabled:opacity-40"
             style={{ backgroundColor: primary }}
           >
-            Add · {formatRs(unit * qty)}
+            Add - {formatRs(unit * qty)}
           </button>
         </div>
       </div>
@@ -553,7 +553,7 @@ function FeedbackBlock({ primary }: { primary: string }) {
       <h2 className="text-base font-black">Tell us what you think</h2>
       {sent ? (
         <p className="mt-2 text-sm font-bold text-green-700">
-          Thank you — your feedback was sent to the restaurant.
+          Thank you - your feedback was sent to the restaurant.
         </p>
       ) : (
         <div className="mt-3 flex flex-col gap-2.5">
@@ -577,7 +577,7 @@ function FeedbackBlock({ primary }: { primary: string }) {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={3}
-            placeholder="Your message for the restaurant…"
+            placeholder="Your message for the restaurant..."
             className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none"
           />
           <button
@@ -586,7 +586,7 @@ function FeedbackBlock({ primary }: { primary: string }) {
             className="self-start rounded-full px-5 py-2.5 text-sm font-extrabold text-white disabled:opacity-40"
             style={{ backgroundColor: primary }}
           >
-            {busy ? "Sending…" : "Send feedback"}
+            {busy ? "Sending..." : "Send feedback"}
           </button>
         </div>
       )}
@@ -685,12 +685,16 @@ function CheckoutPanel({
       <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
         {placed ? (
           <div className="py-4 text-center">
-            <p className="text-4xl">✓</p>
+            <p className="flex justify-center text-emerald-600">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 12.5l5 5L20 6.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </p>
             <h3 className="mt-2 text-lg font-black">Order placed</h3>
             <p className="mt-1 text-sm font-semibold text-neutral-500">
               {restaurantName} received your order <strong>#{placed.order_no}</strong>.
               Total: <strong>{formatRs(placed.total_pkr)}</strong>
-              {payment === "cod" ? " — please keep cash ready." : "."}
+              {payment === "cod" ? " - please keep cash ready." : "."}
             </p>
             <a
               href={`/track/${placed.id}`}
@@ -707,7 +711,7 @@ function CheckoutPanel({
           <>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-black">Your order</h3>
-              <button onClick={onClose} className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-bold">✕</button>
+              <button onClick={onClose} aria-label="Close" className="rounded-full bg-neutral-100 px-3 py-1.5 text-sm font-bold"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="block"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg></button>
             </div>
 
             <div className="mt-3 flex flex-col gap-2">
@@ -723,7 +727,7 @@ function CheckoutPanel({
                     <p className="text-[13px] font-bold" style={{ color: primary }}>{formatRs(line.unit_price * line.qty)}</p>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => setQty(line.key, line.qty - 1)} className="h-7 w-7 rounded-full bg-white font-black ring-1 ring-neutral-200">−</button>
+                    <button onClick={() => setQty(line.key, line.qty - 1)} className="h-7 w-7 rounded-full bg-white font-black ring-1 ring-neutral-200">-</button>
                     <span className="min-w-5 text-center text-sm font-extrabold">{line.qty}</span>
                     <button onClick={() => setQty(line.key, line.qty + 1)} className="h-7 w-7 rounded-full bg-white font-black ring-1 ring-neutral-200">+</button>
                   </div>
@@ -755,7 +759,7 @@ function CheckoutPanel({
                   >
                     {zones.map((z) => (
                       <option key={z.id} value={z.id}>
-                        {z.name} — delivery {z.fee_pkr === 0 ? "free" : formatRs(z.fee_pkr)}
+                        {z.name} - delivery {z.fee_pkr === 0 ? "free" : formatRs(z.fee_pkr)}
                         {z.free_above_pkr ? ` (free above ${formatRs(z.free_above_pkr)})` : ""}
                       </option>
                     ))}
@@ -796,7 +800,7 @@ function CheckoutPanel({
               className="mt-4 w-full rounded-full py-3.5 text-sm font-extrabold text-white disabled:opacity-40"
               style={{ backgroundColor: primary }}
             >
-              {busy ? "Placing order…" : `Place order · ${formatRs(subtotal + deliveryFee)}`}
+              {busy ? "Placing order..." : `Place order - ${formatRs(subtotal + deliveryFee)}`}
             </button>
           </>
         )}

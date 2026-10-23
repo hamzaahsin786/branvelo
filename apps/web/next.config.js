@@ -39,6 +39,9 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig = {
+  // Tenant subdomains (usama-burgers.localhost etc.) are first-class in
+  // dev; without this Next warns about cross-origin dev requests.
+  allowedDevOrigins: ["localhost", "*.localhost"],
   images: {
     remotePatterns: [{ protocol: "https", hostname: "**.supabase.co" }],
   },

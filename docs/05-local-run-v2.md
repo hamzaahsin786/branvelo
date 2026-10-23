@@ -1,7 +1,7 @@
-# Branvelo v2 — Run It Locally (Phase 0)
+# Branvelo v2 - Run It Locally (Phase 0)
 
 Prerequisites: Git + Docker Desktop installed. Nothing else (no Python,
-no Node, no PostgreSQL on your machine — all inside containers).
+no Node, no PostgreSQL on your machine - all inside containers).
 
 ## First run
 
@@ -41,7 +41,7 @@ tenant, `localhost` domains, the `starter` plan at Rs 2,499/mo placeholder,
 and a superuser if `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD` are
 set in `.env`), then the dev server.
 
-- Platform super-admin: http://localhost:8000/admin — tenants, domains,
+- Platform super-admin: http://localhost:8000/admin - tenants, domains,
   plans, subscriptions and the audit log. This is where you run the
   platform from.
 - Create a test restaurant (its own schema is created automatically):
@@ -50,7 +50,7 @@ set in `.env`), then the dev server.
     --slug test-cafe --name "Test Cafe" \
     --owner-name "Test Owner" --owner-email owner@example.com
   ```
-  Then browse http://test-cafe.localhost:8000/health — a 200 means the
+  Then browse http://test-cafe.localhost:8000/health - a 200 means the
   subdomain resolved to that tenant's schema. An unknown subdomain
   returns 404 by design.
 - Wipe everything and re-prove from zero: `docker compose down -v` then
@@ -67,10 +67,19 @@ profile with their theme, default opening hours (11:00-23:00 daily), and
 the owner staff account (login = signup email + chosen password).
 
 Try it: `docker compose up`, open http://localhost:3000/platform/signup,
-sign up as e.g. `spice-route`, then check the platform admin — the tenant
-is there — and http://spice-route.localhost:8000/health answers from the
+sign up as e.g. `spice-route`, then check the platform admin - the tenant
+is there - and http://spice-route.localhost:8000/health answers from the
 new tenant's schema. (At deployment, `branvelo.com` and `www` get domain
 rows pointing at the public tenant so this same API serves production.)
+
+Central sign-in: the platform site's `/platform/login` page is a real
+login for the OWNER account. `POST /api/platform/login` finds the tenant
+by owner email, checks the password inside that tenant's schema, and
+returns the slug plus a signed handoff (120 seconds). The browser moves
+to http://<slug>.localhost:3000/admin/login?handoff=..., and the admin
+login swaps it at `POST /api/staff/exchange` for the normal staff token.
+Managers and other staff still sign in directly on the restaurant's own
+subdomain: the platform cannot know their tenant from an email alone.
 
 ## Phase 4: catalog + storefront
 
@@ -88,7 +97,7 @@ Customer side:
 - http://<slug>.localhost:3000 shows the restaurant's real storefront:
   profile, announcement, hours, zones, and the live menu, rendered in the
   theme chosen at signup (color, font, layout variant, sections).
-- Data comes from `GET /api/storefront/` on the tenant's own subdomain —
+- Data comes from `GET /api/storefront/` on the tenant's own subdomain -
   the browser calls the API on the same hostname (port 8000), which is
   how the tenant is resolved. Ordering/cart arrives in Phase 5.
 - Unknown subdomain -> "not on Branvelo yet" page; the platform site
@@ -101,14 +110,14 @@ Customers can now order end to end:
   sheet that enforces the restaurant's required/min/max rules; the cart
   bar opens checkout (delivery zone or pickup, name/phone/address,
   coupon, cash on delivery / JazzCash / EasyPaisa).
-- The server recomputes every price — client totals are never trusted —
+- The server recomputes every price - client totals are never trusted -
   and returns the order number. The success screen links to a live
   tracking page (/track/<order-id>) that updates over websockets as the
   kitchen moves the order (placed -> confirmed -> preparing -> ready ->
   dispatched -> delivered), with the full item/total breakdown.
 - Admin: the Orders board (the /admin home) lists the day's orders
   live (green "Live" badge when the websocket is connected; it polls as
-  a fallback), with role-correct action buttons — e.g. kitchen staff
+  a fallback), with role-correct action buttons - e.g. kitchen staff
   can prepare but never cancel; cancellation closes once dispatched.
 - Wrong moves are rejected by the API's state machine with a plain
   reason, which the board shows.
@@ -117,14 +126,14 @@ Customers can now order end to end:
 
 - New orders also write a dashboard notification (queue drained by
   `python manage.py dispatch_notifications`; see docs/06) and can fire
-  a browser notification — click "Enable alerts" on the Orders board
+  a browser notification - click "Enable alerts" on the Orders board
   once per browser.
 - Each order's detail has a "WhatsApp customer" button: a wa.me deep
   link to the customer's number with the order status prefilled.
 - Customers can send praise/suggestions/complaints from the storefront
   feedback block; staff triage them on the Reports page.
 - Reports (/admin/reports): orders, revenue, average order for any
-  date range; sales by day, busiest hours, top items — with CSV
+  date range; sales by day, busiest hours, top items - with CSV
   downloads for days and items. Cancelled orders are excluded.
 
 ## Phase 7: migration, isolation tests, backups
@@ -135,7 +144,7 @@ Customers can now order end to end:
   (drop --create if the tenant already exists). Details in docs/06.
 - Tenant isolation is covered by an automated suite:
   `docker compose exec api python manage.py test tenants_app.tests_isolation`
-- Backups: `scripts/backup.sh [schema]` / `scripts/restore.sh` —
+- Backups: `scripts/backup.sh [schema]` / `scripts/restore.sh` -
   see docs/06-hardening-and-ops.md for the full operations notes,
   throttle table and the Phase 7 validation review.
 

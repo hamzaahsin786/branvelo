@@ -4,13 +4,13 @@ Goal: figure out what indolj is built on, to inform our own stack choice.
 
 ## What we probed
 - `indolj.pk` marketing site: WordPress fingerprints (`wp-content` × 9 in HTML), PHP-style
-  `.php` URLs, behind Cloudflare. → Marketing site is WordPress/PHP. (Their blog is active;
+  `.php` URLs, behind Cloudflare. -> Marketing site is WordPress/PHP. (Their blog is active;
   latest post dated Sept 2026.)
-- `api.indolj.pk`: returns a **cPanel default parked page** (`/cgi-sys/defaultwebpage.cgi`) —
+- `api.indolj.pk`: returns a **cPanel default parked page** (`/cgi-sys/defaultwebpage.cgi`) -
   the subdomain is registered but serves nothing. No API tech to fingerprint.
 - `app.indolj.pk`, `dashboard.indolj.pk`, `portal.indolj.pk`: do not resolve.
 - `kababjeesfriedchicken.com` (live indolj-powered restaurant site): behind Cloudflare with
-  bot protection — direct curl gets HTTP 520 with no body, so no framework fingerprints
+  bot protection - direct curl gets HTTP 520 with no body, so no framework fingerprints
   (`__NEXT_DATA__`, `wp-content`, etc.) could be extracted. It is a JS-heavy SPA (their
   marketing brags iOS/Android apps too).
 

@@ -20,14 +20,14 @@ import {
 export const BASE_PRICE_PKR = 2499;
 
 export const CURRENCIES = [
-  { code: "PKR", label: "PKR · Pakistan" },
-  { code: "USD", label: "USD · United States" },
-  { code: "CAD", label: "CAD · Canada" },
-  { code: "EUR", label: "EUR · Eurozone" },
-  { code: "GBP", label: "GBP · United Kingdom" },
-  { code: "AED", label: "AED · UAE" },
-  { code: "SAR", label: "SAR · Saudi Arabia" },
-  { code: "INR", label: "INR · India" },
+  { code: "PKR", label: "PKR - Pakistan" },
+  { code: "USD", label: "USD - United States" },
+  { code: "CAD", label: "CAD - Canada" },
+  { code: "EUR", label: "EUR - Eurozone" },
+  { code: "GBP", label: "GBP - United Kingdom" },
+  { code: "AED", label: "AED - UAE" },
+  { code: "SAR", label: "SAR - Saudi Arabia" },
+  { code: "INR", label: "INR - India" },
 ] as const;
 
 export type CurrencyCode = (typeof CURRENCIES)[number]["code"];
@@ -368,8 +368,8 @@ export function CurrencySelector() {
   const { currency, setCurrency, auto, useAuto, detectedCountry } =
     useCurrency();
   const autoLabel = detectedCountry
-    ? `Auto · ${COUNTRY_NAMES[detectedCountry] ?? detectedCountry}`
-    : "Auto · by country";
+    ? `Auto - ${COUNTRY_NAMES[detectedCountry] ?? detectedCountry}`
+    : "Auto - by country";
   return (
     <select
       aria-label="Display currency"

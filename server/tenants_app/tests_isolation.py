@@ -1,7 +1,7 @@
 # Tenant-isolation test suite (Phase 7). Run:
 #   python manage.py test tenants_app.tests_isolation
 # Proves the property the whole product rests on: one tenant can never
-# see, read, or act on another tenant's data — by hostname, by token,
+# see, read, or act on another tenant's data - by hostname, by token,
 # or by guessing ids.
 from django.contrib.auth import get_user_model
 from django_tenants.test.cases import TenantTestCase
@@ -137,7 +137,7 @@ class TenantIsolationTests(TenantTestCase):
         res = self.client.get("/api/staff/catalog/categories", HTTP_HOST=HOST_A)
         self.assertEqual(res.status_code, 200)
 
-    # 3. An order placed at A does not exist at B — publicly or for staff.
+    # 3. An order placed at A does not exist at B - publicly or for staff.
     def test_order_invisible_across_tenants(self):
         with tenant_context(self.tenant):
             item = MenuItem.objects.get(name="Alpha Burger")

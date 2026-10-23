@@ -6,7 +6,7 @@ plug in here at deployment, behind provider credentials; rows for those
 channels stay queued (and are counted) until a sender exists.
 
 Run: python manage.py dispatch_notifications
-(On the server this runs on a timer — see docs/05.)
+(On the server this runs on a timer - see docs/05.)
 """
 from django.core.management.base import BaseCommand
 from django.utils import timezone

@@ -42,7 +42,7 @@ export function Footer({ tenant }: { tenant: Tenant }) {
             </h3>
             <p className="mt-3 flex items-center gap-2 text-sm text-neutral-300">
               <ClockIcon className="h-4 w-4" />
-              Open daily · {hoursSummary(tenant.hours)}
+              Open daily - {hoursSummary(tenant.hours)}
             </p>
           </div>
           <div>

@@ -37,7 +37,7 @@ export function Hero({ tenant }: { tenant: Tenant }) {
           )}
           <p className="mt-3 flex items-center gap-1.5 text-xs text-neutral-400">
             <ClockIcon className="h-4 w-4" />
-            Open daily · {hoursSummary(tenant.hours)}
+            Open daily - {hoursSummary(tenant.hours)}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <a

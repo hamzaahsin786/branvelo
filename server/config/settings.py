@@ -165,6 +165,7 @@ REST_FRAMEWORK = {
         "slug_check": "60/min",
         "order_place": "30/hour",
         "staff_login": "30/hour",
+        "platform_login": "20/hour",
         "feedback": "20/hour",
     },
 }

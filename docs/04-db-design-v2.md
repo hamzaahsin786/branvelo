@@ -1,4 +1,4 @@
-# Branvelo v2 — Database Design
+# Branvelo v2 - Database Design
 
 One PostgreSQL database. Two layers:
 - `public` schema: the platform control layer (SHARED_APPS).
@@ -13,7 +13,7 @@ sets the PostgreSQL `search_path` to that tenant's schema for the whole request.
 
 ## 1. Public schema (control layer)
 
-### tenants — the control table
+### tenants - the control table
 | column | type | notes |
 |---|---|---|
 | id | uuid pk | |
@@ -87,7 +87,7 @@ in the tenant schema.
 ### restaurant_profile (single row per tenant)
 name, logo_url, phone, address, city, currency (default `PKR`),
 announcement text, is_open flag (manual override), theme jsonb
-(colors, fonts — same shape as v1 so the storefront theming ports directly).
+(colors, fonts - same shape as v1 so the storefront theming ports directly).
 
 ### opening_hours
 | column | type | notes |

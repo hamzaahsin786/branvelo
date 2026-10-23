@@ -24,7 +24,7 @@ class FeedbackSerializer(serializers.ModelSerializer):
 
 
 class PublicFeedbackView(APIView):
-    """POST /api/feedback — from the storefront (order link optional)."""
+    """POST /api/feedback - from the storefront (order link optional)."""
 
     permission_classes = [AllowAny]
     authentication_classes: list = []
@@ -48,13 +48,13 @@ class PublicFeedbackView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
-            {"detail": "Thank you — your feedback was sent to the restaurant."},
+            {"detail": "Thank you - your feedback was sent to the restaurant."},
             status=status.HTTP_201_CREATED,
         )
 
 
 class StaffFeedbackListView(APIView):
-    """GET /api/staff/feedback?status= — newest first."""
+    """GET /api/staff/feedback?status= - newest first."""
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsActiveStaff]
@@ -70,7 +70,7 @@ class StaffFeedbackListView(APIView):
 
 
 class StaffFeedbackUpdateView(APIView):
-    """PATCH /api/staff/feedback/<id> {status} — owner/manager triage."""
+    """PATCH /api/staff/feedback/<id> {status} - owner/manager triage."""
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsStaffWriter]
@@ -94,7 +94,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 
 class StaffNotificationListView(APIView):
-    """GET /api/staff/notifications — the dashboard alert queue, latest 30."""
+    """GET /api/staff/notifications - the dashboard alert queue, latest 30."""
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsActiveStaff]

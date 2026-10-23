@@ -24,9 +24,9 @@ const LAYOUTS = [
   { value: "minimal", name: "Minimal", blurb: "Clean text menu. Fastest to browse." },
 ];
 const FONTS = [
-  { value: "nunito", name: "Nunito — friendly and rounded" },
-  { value: "poppins", name: "Poppins — modern and geometric" },
-  { value: "inter", name: "Inter — clean and neutral" },
+  { value: "nunito", name: "Nunito - friendly and rounded" },
+  { value: "poppins", name: "Poppins - modern and geometric" },
+  { value: "inter", name: "Inter - clean and neutral" },
 ];
 
 function slugify(name: string): string {
@@ -175,8 +175,10 @@ export default function SignupPage() {
       <section className="bg-gradient-to-b from-[#F4F2FF] to-white py-16 lg:py-24">
         <div className="mx-auto max-w-lg px-4 sm:px-6">
           <div className="rounded-[28px] border border-[#E4E1FA] bg-white p-8 text-center shadow-sm">
-            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#E9F9EE] text-2xl font-black text-[#15803D]">
-              ✓
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#E9F9EE] text-[#15803D]">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 12.5l5 5L20 6.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </span>
             <h1 className="mt-4 text-2xl font-black text-[#17143A]">
               {restaurantName} is on Branvelo.
@@ -228,7 +230,7 @@ export default function SignupPage() {
             No commission, ever.
           </p>
           <p className="mt-3 text-[13px] font-extrabold uppercase tracking-wide text-[#6B6794]">
-            Step {step} of 2 — {step === 1 ? "Your details" : "Make it yours"}
+            Step {step} of 2 - {step === 1 ? "Your details" : "Make it yours"}
           </p>
         </div>
 
@@ -267,7 +269,7 @@ export default function SignupPage() {
                 </span>
               </div>
               {slugState.kind === "checking" && (
-                <p className="mt-1.5 text-[13px] font-bold text-[#6B6794]">Checking availability…</p>
+                <p className="mt-1.5 text-[13px] font-bold text-[#6B6794]">Checking availability...</p>
               )}
               {slugState.kind === "ok" && (
                 <p className="mt-1.5 text-[13px] font-bold text-[#15803D]">Available. This will be your address.</p>
@@ -494,7 +496,7 @@ export default function SignupPage() {
                 disabled={submitting}
                 className="flex-1 rounded-full bg-[#2C24A3] py-3.5 text-[16px] font-extrabold text-white transition hover:bg-[#3B34C4] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {submitting ? "Creating your restaurant…" : "Create my restaurant"}
+                {submitting ? "Creating your restaurant..." : "Create my restaurant"}
               </button>
             </div>
             <p className="text-center text-[13px] font-semibold text-[#6B6794]">

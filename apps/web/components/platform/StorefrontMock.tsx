@@ -27,7 +27,7 @@ export default function StorefrontMock() {
           <div>
             <p className="text-[16px] font-black leading-tight">Your Restaurant</p>
             <p className="text-[13px] font-bold text-[#6B6794]">
-              Your City · Open now
+              Your City - Open now
             </p>
           </div>
           <span className="ml-auto rounded-full bg-[#EFEDFF] px-2.5 py-1 text-[12px] font-black text-[#2C24A3]">
@@ -59,7 +59,7 @@ export default function StorefrontMock() {
         <p className="text-[11px] font-black uppercase tracking-wide text-[#F59E0B]">
           New order
         </p>
-        <p className="text-sm font-extrabold">2x Zinger · {fromPkr(1450)}</p>
+        <p className="text-sm font-extrabold">2x Zinger - {fromPkr(1450)}</p>
         <p className="text-[12px] font-bold text-white/60">
           Commission paid: {fromPkr(0)}
         </p>

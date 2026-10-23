@@ -2,7 +2,7 @@
 
 The login itself is Django's auth user *inside the tenant schema*; this
 profile row carries the restaurant role. Restaurant staff never exist in
-the public schema — platform staff (public auth users) are a different set.
+the public schema - platform staff (public auth users) are a different set.
 """
 from django.conf import settings
 from django.db import models

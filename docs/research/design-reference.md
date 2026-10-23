@@ -1,11 +1,11 @@
-# Design Reference — Kababjees Fried Chicken site (built by indolj)
+# Design Reference - Kababjees Fried Chicken site (built by indolj)
 
 Studied live 2026-10-16. Layout patterns to reuse for Usama Burgers (reskinned to its own brand, not copied pixel-for-pixel).
 
 ## Visual style
-- Light theme (white/off-white), brand red dominant (~#E01F26 / #EE202E), charcoal text (#111–#1A1A1A), light gray card backgrounds (#F3F4F6), gold/yellow accents (#FFC400) for badges
+- Light theme (white/off-white), brand red dominant (~#E01F26 / #EE202E), charcoal text (#111-#1A1A1A), light gray card backgrounds (#F3F4F6), gold/yellow accents (#FFC400) for badges
 - Playful cartoon/fast-food typography: chunky rounded headings, condensed tall cartoon sans for product names, small gray sans prices
-- Heavy use of illustrated cartoon food art + mascot; product photos on light gray backgrounds; generous rounding (16–32px radii)
+- Heavy use of illustrated cartoon food art + mascot; product photos on light gray backgrounds; generous rounding (16-32px radii)
 - Signature detail: red-and-white striped awning scallop border at the very top edge
 
 ## Structure (top to bottom)
@@ -37,4 +37,4 @@ Studied live 2026-10-16. Layout patterns to reuse for Usama Burgers (reskinned t
 ## Reskin notes for Usama Burgers
 - Replace red with Usama's brand colors from signage (green + yellow) or keep a bold single brand color
 - Keep: awning strip, pill header, location gate, sticky scrollspy pills, cartoon banners per category, product cards with "+" buttons, app-download-style CTA (here: WhatsApp/phone ordering instead of app), complaint/feedback section, illustrated footer strip
-- Usama's actual order channels: phone (0339 5249000), foodpanda deep link, WhatsApp — no custom app, so swap "app download" banner for "order now" channels
+- Usama's actual order channels: phone (0339 5249000), foodpanda deep link, WhatsApp - no custom app, so swap "app download" banner for "order now" channels

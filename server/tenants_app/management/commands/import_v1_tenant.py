@@ -125,7 +125,7 @@ class Command(BaseCommand):
             profile.address = tenant_row.get("address") or ""
             profile.announcement = tenant_row.get("announcement") or ""
             if isinstance(tenant_row.get("theme"), dict):
-                # Same bounded-token cleaning as the signup API — one
+                # Same bounded-token cleaning as the signup API - one
                 # implementation, shared (guardrail 1: theme is data).
                 from tenants_app.api import _clean_theme
                 profile.theme = _clean_theme(tenant_row["theme"])

@@ -1,5 +1,5 @@
 """Sales reports: aggregated from orders (items are JSONB snapshots, so
-item stats are computed in Python — exact by construction)."""
+item stats are computed in Python - exact by construction)."""
 import csv
 from datetime import timedelta
 
@@ -78,7 +78,7 @@ class SalesReportView(APIView):
 
 
 class SalesCsvView(APIView):
-    """GET /api/staff/reports/sales.csv?kind=days|items — same range rules."""
+    """GET /api/staff/reports/sales.csv?kind=days|items - same range rules."""
 
     permission_classes = [IsActiveStaff]
 

@@ -1,16 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { setStaffToken, tenantApiOrigin } from "@/lib/staff-api";
 
-/** Admin sign-in — Django staff login (per-tenant token auth). */
+/** Admin sign-in - Django staff login (per-tenant token auth). */
 export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const exchanged = useRef(false);
+
+  // Central sign-in handoff: the platform site's login sends owners here
+  // with a short-lived signed handoff in the URL. Swap it for the normal
+  // staff token and go straight to the dashboard; on any failure fall
+  // back to the regular form with the reason shown.
+  useEffect(() => {
+    if (exchanged.current) return;
+    const handoff = new URLSearchParams(window.location.search).get(
+      "handoff",
+    );
+    if (!handoff) return;
+    exchanged.current = true;
+    // Drop the handoff from the address bar so a refresh cannot replay it.
+    window.history.replaceState(null, "", window.location.pathname);
+    setBusy(true);
+    (async () => {
+      try {
+        const res = await fetch(`${tenantApiOrigin()}/api/staff/exchange`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ handoff }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.token) {
+          setError(
+            data.detail ||
+              "This sign-in link has expired. Please sign in here.",
+          );
+          return;
+        }
+        setStaffToken(data.token);
+        router.replace("/admin/menu");
+      } catch {
+        setError("Network error. Please try again");
+      } finally {
+        setBusy(false);
+      }
+    })();
+  }, [router]);
 
   const signIn = async () => {
     setError(null);
@@ -70,7 +110,7 @@ export function LoginForm() {
             disabled={busy}
             className="rounded-full bg-neutral-900 py-3 text-sm font-bold text-white disabled:opacity-50"
           >
-            {busy ? "Signing in…" : "Sign in"}
+            {busy ? "Signing in..." : "Sign in"}
           </button>
         </div>
       </div>

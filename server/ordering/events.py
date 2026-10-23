@@ -2,7 +2,7 @@
 
 Published from the (sync) HTTP layer after an order is placed or moves.
 Two audiences: the tenant's admin feed (group per schema) and the single
-order's tracking page (group per order id — the UUID is the capability,
+order's tracking page (group per order id - the UUID is the capability,
 same trust model as the public tracking endpoint).
 """
 import logging

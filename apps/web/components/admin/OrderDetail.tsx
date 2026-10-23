@@ -97,11 +97,11 @@ export function OrderDetail({ order: initial, history }: Props) {
             <p className="mt-1 text-sm text-neutral-600">{order.customer_address}</p>
           )}
           <p className="mt-2 text-xs text-neutral-500">
-            {order.type === "delivery" ? "Delivery" : "Pick-Up"} ·{" "}
+            {order.type === "delivery" ? "Delivery" : "Pick-Up"} -{" "}
             {order.payment_method === "cod"
               ? "Cash on delivery"
               : order.payment_method}
-            {order.payment_ref && ` · Ref: ${order.payment_ref}`}
+            {order.payment_ref && ` - Ref: ${order.payment_ref}`}
           </p>
           {order.notes && (
             <p className="mt-2 rounded-xl bg-yellow-50 p-2 text-sm">
@@ -137,7 +137,7 @@ export function OrderDetail({ order: initial, history }: Props) {
             {order.discount > 0 && (
               <div className="flex justify-between text-green-700">
                 <span>Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}</span>
-                <span>−{formatRs(order.discount)}</span>
+                <span>-{formatRs(order.discount)}</span>
               </div>
             )}
             {order.delivery_fee > 0 && (
@@ -164,7 +164,7 @@ export function OrderDetail({ order: initial, history }: Props) {
               <span>
                 {h.from_status ? `${h.from_status} to ` : ""}
                 <strong>{h.to_status}</strong>
-                {h.actor && ` · ${h.actor}`}
+                {h.actor && ` - ${h.actor}`}
               </span>
               <span className="text-xs text-neutral-400">
                 {new Date(h.created_at).toLocaleTimeString("en-PK", {

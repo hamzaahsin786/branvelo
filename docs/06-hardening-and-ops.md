@@ -1,4 +1,4 @@
-# 06 — Hardening & Operations (v2, Phase 7)
+# 06 - Hardening & Operations (v2, Phase 7)
 
 ## Tenant isolation: how it is enforced, and the proof
 
@@ -17,7 +17,7 @@
   invisibility both public and staff-side, duplicate-slug rejection,
   fresh-tenant emptiness). Run:
   `python manage.py test tenants_app.tests_isolation`
-  Note: the suite documents a django-tenants quirk — its
+  Note: the suite documents a django-tenants quirk - its
   `TenantTestCase.setUpClass` never calls `TestCase.setUpClass`, so
   `setUpTestData` silently never runs; all fixture work lives in
   `setUpClass` there.
@@ -28,7 +28,8 @@
 |---|---|---|
 | signup | 10/hour/IP | POST /api/platform/signup |
 | slug_check | 60/min/IP | GET /api/platform/slug-check |
-| staff_login | 30/hour/IP | POST /api/staff/login |
+| staff_login | 30/hour/IP | POST /api/staff/login, POST /api/staff/exchange |
+| platform_login | 20/hour/IP | POST /api/platform/login |
 | order_place | 30/hour/IP | POST /api/orders/ |
 | feedback | 20/hour/IP | POST /api/feedback |
 
@@ -47,7 +48,7 @@
   (ordering/services.TRANSITIONS); the admin UI merely mirrors it.
 - Signup: slug grammar + reserved list + global uniqueness on slug and
   owner email; theme input passes through the bounded-token cleaner
-  (`tenants_app.api._clean_theme`) — the same function the v1 importer
+  (`tenants_app.api._clean_theme`) - the same function the v1 importer
   uses, so there is exactly one cleaning implementation.
 - Production settings block (DEBUG=0): SSL redirect behind the proxy
   header, secure cookies, HSTS, nosniff, X-Frame-Options DENY.
@@ -88,5 +89,5 @@ a Supabase JSON export (field mapping per docs in the command). The
 tenant's catalog is wiped first, so re-runs are safe. Historical v1
 orders are not imported; the v1 database stays the archive of record.
 Archiving the v1 code (apps/api, packages/shared, supabase/) to a
-legacy branch happens with the Phase 5–7 batch push, with Muhammad's
+legacy branch happens with the Phase 5-7 batch push, with Muhammad's
 approval.

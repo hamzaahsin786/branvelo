@@ -10,8 +10,8 @@ export interface AdminMe {
 
 /**
  * Server-side admin gate for /admin pages.
- * 1. Must have a Supabase Auth session (else → /admin/login).
- * 2. The API must confirm owner/manager of the resolved tenant (else → /admin/login).
+ * 1. Must have a Supabase Auth session (else -> /admin/login).
+ * 2. The API must confirm owner/manager of the resolved tenant (else -> /admin/login).
  * Returns the session token + /api/admin/me payload for data fetching.
  */
 export async function requireAdminPage(): Promise<{

@@ -23,7 +23,7 @@ from ordering.services import CheckoutError, TransitionError, place_order, trans
 
 
 class PlaceOrderView(APIView):
-    """POST /api/orders — public checkout on the tenant's subdomain."""
+    """POST /api/orders - public checkout on the tenant's subdomain."""
 
     permission_classes = [AllowAny]
     authentication_classes: list = []
@@ -59,7 +59,7 @@ class PlaceOrderView(APIView):
 
 
 class PublicOrderView(APIView):
-    """GET /api/orders/<uuid> — tracking payload. The UUID is unguessable;
+    """GET /api/orders/<uuid> - tracking payload. The UUID is unguessable;
     that is the access control, same as the v1 tracking links."""
 
     permission_classes = [AllowAny]
@@ -109,7 +109,7 @@ class StaffOrderDetailView(RetrieveAPIView):
 
 
 class StaffOrderTransitionView(APIView):
-    """POST /api/staff/orders/<uuid>/transition {to_status} — role-gated
+    """POST /api/staff/orders/<uuid>/transition {to_status} - role-gated
     by the state machine in ordering.services.TRANSITIONS."""
 
     authentication_classes = [TokenAuthentication]

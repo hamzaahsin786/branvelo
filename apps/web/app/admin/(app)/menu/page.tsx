@@ -42,7 +42,7 @@ export default function AdminMenuPage() {
     );
   }
   if (!data) {
-    return <p className="text-sm font-semibold text-neutral-400">Loading menu…</p>;
+    return <p className="text-sm font-semibold text-neutral-400">Loading menu...</p>;
   }
   return (
     <MenuManager initialCategories={data.categories} initialItems={data.items} />

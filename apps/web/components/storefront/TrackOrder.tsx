@@ -88,7 +88,7 @@ export function TrackOrder({ orderId }: { orderId: string }) {
   }, [orderId]);
 
   if (state === "loading") {
-    return <Shell><p className="text-sm font-semibold text-neutral-400">Loading your order…</p></Shell>;
+    return <Shell><p className="text-sm font-semibold text-neutral-400">Loading your order...</p></Shell>;
   }
   if (state === "missing") {
     return (
@@ -119,7 +119,7 @@ export function TrackOrder({ orderId }: { orderId: string }) {
         </p>
         <h1 className="mt-1 text-center text-2xl font-black">Order #{order.order_no}</h1>
         <p className="mt-1 text-center text-sm font-semibold text-neutral-500">
-          {order.type === "delivery" ? "Delivery" : "Pickup"} · {formatRs(order.total_pkr)} ·{" "}
+          {order.type === "delivery" ? "Delivery" : "Pickup"} - {formatRs(order.total_pkr)} -{" "}
           {order.payment_method === "cod" ? "Cash on delivery" : order.payment_method}
         </p>
 
@@ -146,7 +146,13 @@ export function TrackOrder({ orderId }: { orderId: string }) {
                         done || current ? "bg-[#2C24A3]" : "bg-neutral-200 text-neutral-400"
                       }`}
                     >
-                      {done ? "✓" : i + 1}
+                      {done ? (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M4 12.5l5 5L20 6.5" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : (
+                        i + 1
+                      )}
                     </span>
                     {i < steps.length - 1 && (
                       <span className={`w-0.5 flex-1 ${done ? "bg-[#2C24A3]" : "bg-neutral-100"}`} style={{ minHeight: 22 }} />
@@ -191,7 +197,7 @@ export function TrackOrder({ orderId }: { orderId: string }) {
           <div className="mt-3 space-y-1 border-t border-neutral-100 pt-3 text-sm font-semibold text-neutral-600">
             <p className="flex justify-between"><span>Subtotal</span><span>{formatRs(order.subtotal_pkr)}</span></p>
             {order.discount_pkr > 0 && (
-              <p className="flex justify-between text-green-700"><span>Discount</span><span>− {formatRs(order.discount_pkr)}</span></p>
+              <p className="flex justify-between text-green-700"><span>Discount</span><span>- {formatRs(order.discount_pkr)}</span></p>
             )}
             {order.type === "delivery" && (
               <p className="flex justify-between"><span>Delivery</span><span>{order.delivery_fee_pkr === 0 ? "Free" : formatRs(order.delivery_fee_pkr)}</span></p>

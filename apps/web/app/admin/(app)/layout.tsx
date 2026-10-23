@@ -42,7 +42,7 @@ export default function AdminLayout({
   if (!me) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-neutral-50">
-        <p className="text-sm font-semibold text-neutral-400">Loading…</p>
+        <p className="text-sm font-semibold text-neutral-400">Loading...</p>
       </div>
     );
   }

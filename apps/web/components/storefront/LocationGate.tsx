@@ -71,7 +71,7 @@ export function LocationGate({ open, zones, initial, onClose, onSave }: Props) {
               onChange={(e) => setZoneId(e.target.value)}
               className="mt-1 w-full rounded-xl border border-neutral-200 bg-white px-3 py-3 text-sm"
             >
-              <option value="">Select area…</option>
+              <option value="">Select area...</option>
               {zones.map((z) => (
                 <option key={z.id} value={z.id}>
                   {z.name}: {formatRs(z.fee)} delivery
@@ -82,7 +82,7 @@ export function LocationGate({ open, zones, initial, onClose, onSave }: Props) {
               <p className="mt-2 text-xs text-neutral-500">
                 Min order {formatRs(zone.min_order)}
                 {zone.free_above != null &&
-                  ` · Free delivery above ${formatRs(zone.free_above)}`}
+                  ` - Free delivery above ${formatRs(zone.free_above)}`}
               </p>
             )}
           </div>

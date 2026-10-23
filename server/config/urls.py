@@ -8,7 +8,7 @@ from config.views import health
 # URL style: named actions are slash-less (/api/platform/signup); the two
 # collection roots mounted with path("") keep their trailing slash
 # (/api/storefront/, /api/orders/, /api/staff/orders/). Clients must use
-# the exact forms — Django will not redirect a slash-less POST.
+# the exact forms - Django will not redirect a slash-less POST.
 urlpatterns = [
     path("health", health),
     path("admin/", admin.site.urls),

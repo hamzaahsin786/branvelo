@@ -71,8 +71,8 @@ export function TrackClient({ order: initial, themePrimary }: Props) {
         Order #{order.order_no}
       </h1>
       <p className="mt-1 text-center text-sm text-neutral-500">
-        {order.customer_name} ·{" "}
-        {order.type === "delivery" ? "Delivery" : "Pick-Up"} ·{" "}
+        {order.customer_name} -{" "}
+        {order.type === "delivery" ? "Delivery" : "Pick-Up"} -{" "}
         {formatRs(order.total)}
       </p>
 
@@ -157,7 +157,7 @@ export function TrackClient({ order: initial, themePrimary }: Props) {
           {order.discount > 0 && (
             <div className="flex justify-between text-green-700">
               <span>Discount</span>
-              <span>−{formatRs(order.discount)}</span>
+              <span>-{formatRs(order.discount)}</span>
             </div>
           )}
           {order.delivery_fee > 0 && (
@@ -174,7 +174,7 @@ export function TrackClient({ order: initial, themePrimary }: Props) {
       </div>
 
       <p className="mt-6 text-center text-xs text-neutral-400">
-        Live updates · Powered by Branvelo
+        Live updates - Powered by Branvelo
       </p>
     </div>
   );

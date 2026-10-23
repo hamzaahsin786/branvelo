@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Reports page (v2): sales summary from the Django reports API —
+ * Reports page (v2): sales summary from the Django reports API -
  * totals, per-day table, top items, busiest hours, CSV downloads.
  */
 import { useCallback, useEffect, useState } from "react";
@@ -113,7 +113,7 @@ export default function ReportsPage() {
           </div>
           <p className="mt-2 text-[12px] font-semibold text-neutral-400">
             Cancelled orders are excluded. Status mix:{" "}
-            {Object.entries(report.by_status).map(([s, n]) => `${s} ${n}`).join(" · ") || "none"}
+            {Object.entries(report.by_status).map(([s, n]) => `${s} ${n}`).join(" - ") || "none"}
           </p>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -127,14 +127,14 @@ export default function ReportsPage() {
                 {report.by_day.map((d) => (
                   <p key={d.date} className="flex justify-between border-b border-neutral-50 py-1.5 text-sm font-semibold text-neutral-600">
                     <span>{d.date}</span>
-                    <span>{d.orders} orders · {formatRs(d.revenue)}</span>
+                    <span>{d.orders} orders - {formatRs(d.revenue)}</span>
                   </p>
                 ))}
               </div>
               <h2 className="mt-5 text-sm font-black">Busiest hours</h2>
               <div className="mt-2 flex items-end gap-1" style={{ height: 72 }}>
                 {report.by_hour.map((h) => (
-                  <div key={h.hour} className="flex flex-1 flex-col items-center gap-1" title={`${h.hour}:00 — ${h.orders} orders`}>
+                  <div key={h.hour} className="flex flex-1 flex-col items-center gap-1" title={`${h.hour}:00 - ${h.orders} orders`}>
                     <div className="w-full rounded-t bg-[#2C24A3]" style={{ height: `${Math.max(6, (h.orders / maxHourOrders) * 56)}px` }} />
                     <span className="text-[10px] font-bold text-neutral-400">{h.hour}</span>
                   </div>
@@ -153,7 +153,7 @@ export default function ReportsPage() {
                 {report.by_item.map((item, i) => (
                   <p key={item.name} className="flex justify-between border-b border-neutral-50 py-1.5 text-sm font-semibold text-neutral-600">
                     <span>{i + 1}. {item.name}</span>
-                    <span>{item.qty} sold · {formatRs(item.revenue)}</span>
+                    <span>{item.qty} sold - {formatRs(item.revenue)}</span>
                   </p>
                 ))}
               </div>

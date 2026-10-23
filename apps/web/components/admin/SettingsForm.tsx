@@ -214,7 +214,7 @@ export function SettingsForm({ initialSettings, initialZones }: Props) {
           Opening hours
         </h2>
         <p className="mt-1 text-xs text-neutral-500">
-          Current: {hoursSummary({ days: settings.hours.days ?? {} })} · close ≤ open means past
+          Current: {hoursSummary({ days: settings.hours.days ?? {} })} - close ≤ open means past
           midnight (e.g. 04:30 = next day).
         </p>
         <textarea
@@ -246,8 +246,8 @@ export function SettingsForm({ initialSettings, initialZones }: Props) {
               <div className="text-sm">
                 <span className="font-bold">{z.name}</span>
                 <span className="ml-2 text-xs text-neutral-500">
-                  {formatRs(z.fee)} fee · min {formatRs(z.min_order)}
-                  {z.free_above != null && ` · free above ${formatRs(z.free_above)}`}
+                  {formatRs(z.fee)} fee - min {formatRs(z.min_order)}
+                  {z.free_above != null && ` - free above ${formatRs(z.free_above)}`}
                 </span>
               </div>
               <span className="flex gap-1">

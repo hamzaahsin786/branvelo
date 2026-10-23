@@ -17,7 +17,7 @@ export function AdminShell({
           <div className="min-w-0">
             <p className="truncate text-sm font-extrabold">{me.tenant.name}</p>
             <p className="text-xs text-neutral-500">
-              {me.user.name || me.user.role} · Admin
+              {me.user.name || me.user.role} - Admin
             </p>
           </div>
           <SignOutButton />

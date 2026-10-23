@@ -22,7 +22,7 @@ interface PlacedOrder {
   tracking_token: string;
 }
 
-/** Slide-in cart drawer with qty steppers → checkout → success. */
+/** Slide-in cart drawer with qty steppers -> checkout -> success. */
 export function CartDrawer({ tenant, zones, location, onLocationOpen }: Props) {
   const { lines, subtotal, count, setQty, clear, isOpen, setOpen } = useCart();
   const slug = useTenantSlug();
@@ -115,7 +115,7 @@ export function CartDrawer({ tenant, zones, location, onLocationOpen }: Props) {
                       onClick={() => setStep("checkout")}
                       className="mt-3 w-full rounded-full bg-[var(--brand)] py-3.5 font-bold text-white"
                     >
-                      Checkout · {formatRs(subtotal)}
+                      Checkout - {formatRs(subtotal)}
                     </button>
                   </div>
                 )}
@@ -311,7 +311,7 @@ function CheckoutForm({
               onChange={(e) => setZoneId(e.target.value)}
               className={inputCls}
             >
-              <option value="">Select area…</option>
+              <option value="">Select area...</option>
               {zones.map((z) => (
                 <option key={z.id} value={z.id}>
                   {z.name}: {formatRs(z.fee)} delivery
@@ -421,7 +421,7 @@ function CheckoutForm({
           disabled={placing || lines.length === 0}
           className="flex-1 rounded-full bg-[var(--brand)] py-3.5 font-bold text-white disabled:opacity-50"
         >
-          {placing ? "Placing…" : `Place Order · ${formatRs(subtotal + fee)}`}
+          {placing ? "Placing..." : `Place Order - ${formatRs(subtotal + fee)}`}
         </button>
       </div>
     </div>

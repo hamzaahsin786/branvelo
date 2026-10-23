@@ -149,7 +149,7 @@ function StorefrontInner({ catalog }: { catalog: CatalogData }) {
           ))}
           {q !== "" && visible.every((v) => v.items.length === 0) && (
             <p className="px-6 py-10 text-center text-sm text-neutral-500">
-              No items match “{query}”.
+              No items match "{query}".
             </p>
           )}
         </div>
@@ -173,7 +173,7 @@ function StorefrontInner({ catalog }: { catalog: CatalogData }) {
           className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[var(--brand)] px-6 py-3.5 font-bold text-white shadow-xl"
         >
           <CartIcon className="h-5 w-5" />
-          View cart · {count}
+          View cart - {count}
         </button>
       )}
     </>

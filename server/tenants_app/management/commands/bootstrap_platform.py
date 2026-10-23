@@ -6,7 +6,7 @@ Run after the first `migrate_schemas`:
 Creates, in the public schema:
 - the public tenant row + `localhost` / `127.0.0.1` domains, so the admin
   and health endpoints resolve on a developer machine;
-- the default `starter` plan (Rs 2,499/mo placeholder price — edit it in
+- the default `starter` plan (Rs 2,499/mo placeholder price - edit it in
   the Admin; it is data, not code);
 - a Django superuser when PLATFORM_ADMIN_EMAIL and
   PLATFORM_ADMIN_PASSWORD are set in the environment.

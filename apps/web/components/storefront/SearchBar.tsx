@@ -15,7 +15,7 @@ export function SearchBar({ value, onChange }: Props) {
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Search items…"
+          placeholder="Search items..."
           className="w-full bg-transparent text-sm outline-none placeholder:text-neutral-400"
         />
       </label>

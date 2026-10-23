@@ -436,7 +436,11 @@ export default function PlatformHome() {
                 "No commission, no setup fee, no contract",
               ].map((f) => (
                 <li key={f} className="flex gap-2.5">
-                  <span className="mt-0.5 font-black text-[#15803D]">✓</span>
+                  <span className="mt-0.5 shrink-0 text-[#15803D]">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4 12.5l5 5L20 6.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
                   <span>{f}</span>
                 </li>
               ))}

@@ -1,10 +1,11 @@
 """Staff authentication API (per-tenant).
 
 Login runs inside the tenant resolved from the request hostname, so the
-same email can be staff at several restaurants without collisions — each
+same email can be staff at several restaurants without collisions - each
 schema has its own users and its own tokens.
 """
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
+from django.core import signing
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -66,8 +67,57 @@ class StaffLoginView(APIView):
         return Response({"token": token.key, **_staff_payload(request, user)})
 
 
+class StaffExchangeView(APIView):
+    """POST /api/staff/exchange {handoff} -> {token, user, tenant}.
+
+    Swaps a platform-login handoff for this tenant's normal staff token.
+    The handoff is signed on the public schema by
+    tenants_app.api.PlatformLoginView and names the tenant schema it was
+    issued for; if the browser landed on the wrong subdomain, or the
+    handoff is older than HANDOFF_MAX_AGE seconds, the exchange refuses
+    with one generic message.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes: list = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "staff_login"
+
+    def post(self, request):
+        from tenants_app.api import HANDOFF_MAX_AGE, HANDOFF_SALT
+
+        failure = Response(
+            {
+                "detail": (
+                    "This sign-in link has expired. Please sign in again."
+                )
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+        raw = request.data.get("handoff")
+        if not isinstance(raw, str) or not raw:
+            return failure
+        try:
+            payload = signing.loads(
+                raw, salt=HANDOFF_SALT, max_age=HANDOFF_MAX_AGE
+            )
+        except signing.BadSignature:
+            return failure
+        tenant = getattr(request, "tenant", None)
+        if tenant is None or payload.get("t") != tenant.schema_name:
+            return failure
+        user = get_user_model().objects.filter(pk=payload.get("u")).first()
+        if user is None or not user.is_active:
+            return failure
+        profile = getattr(user, "staff_profile", None)
+        if profile is None or not profile.is_active_staff:
+            return failure
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({"token": token.key, **_staff_payload(request, user)})
+
+
 class StaffMeView(APIView):
-    """GET /api/staff/me — who am I at this restaurant (shell header data)."""
+    """GET /api/staff/me - who am I at this restaurant (shell header data)."""
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
