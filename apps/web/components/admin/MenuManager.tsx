@@ -16,6 +16,7 @@ interface ItemForm {
   name: string;
   description: string;
   price: string;
+  compare_at: string;
   photo_url: string;
   badges: string[];
   sort: string;
@@ -27,6 +28,7 @@ const EMPTY_ITEM: ItemForm = {
   name: "",
   description: "",
   price: "",
+  compare_at: "",
   photo_url: "",
   badges: [],
   sort: "0",
@@ -44,6 +46,20 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
 
   const [catName, setCatName] = useState("");
   const [catTagline, setCatTagline] = useState("");
+  const [catBanner, setCatBanner] = useState("");
+  const [catBannerBusy, setCatBannerBusy] = useState(false);
+
+  const handleCatBannerUpload = async (file: File | null) => {
+    if (!file) return;
+    setCatBannerBusy(true);
+    try {
+      setCatBanner(await uploadStaffPhoto(file));
+    } catch (e) {
+      fail(e, "Category photo upload failed");
+    } finally {
+      setCatBannerBusy(false);
+    }
+  };
   const [editingCat, setEditingCat] = useState<Category | null>(null);
 
   const [drawer, setDrawer] = useState<null | ItemForm>(null);
@@ -85,7 +101,11 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
       if (editingCat) {
         const res = await api(`/api/staff/catalog/categories/${editingCat.id}`, {
           method: "PATCH",
-          body: JSON.stringify({ name: catName.trim(), tagline: catTagline.trim() }),
+          body: JSON.stringify({
+            name: catName.trim(),
+            tagline: catTagline.trim(),
+            banner_url: catBanner.trim(),
+          }),
         });
         if (!res.ok) throw new Error("Could not save category");
         const updated = (await res.json()) as Category;
@@ -96,6 +116,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
           body: JSON.stringify({
             name: catName.trim(),
             tagline: catTagline.trim(),
+            banner_url: catBanner.trim(),
             sort: categories.length,
           }),
         });
@@ -105,6 +126,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
       }
       setCatName("");
       setCatTagline("");
+      setCatBanner("");
       setEditingCat(null);
     } catch (e) {
       fail(e, "Category save failed");
@@ -134,6 +156,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
       name: item.name,
       description: item.description ?? "",
       price: String(item.price),
+      compare_at: item.compare_at ? String(item.compare_at) : "",
       photo_url: item.photo_url ?? "",
       badges: item.badges,
       sort: String(item.sort),
@@ -147,6 +170,9 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
       name: drawer.name.trim(),
       description: drawer.description.trim(),
       price: Math.max(0, Math.round(Number(drawer.price) || 0)),
+      compare_at: drawer.compare_at.trim()
+        ? Math.max(0, Math.round(Number(drawer.compare_at) || 0))
+        : null,
       photo_url: drawer.photo_url.trim(),
       badges: drawer.badges,
       sort: Math.max(0, Math.round(Number(drawer.sort) || 0)),
@@ -229,6 +255,7 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
                     setEditingCat(c);
                     setCatName(c.name);
                     setCatTagline(c.tagline ?? "");
+                    setCatBanner(c.banner_url ?? "");
                   }}
                   className="rounded-full px-3 py-1 text-xs font-bold text-blue-700 hover:bg-blue-50"
                 >
@@ -269,11 +296,39 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
                 setEditingCat(null);
                 setCatName("");
                 setCatTagline("");
+                setCatBanner("");
               }}
               className="shrink-0 rounded-full px-4 py-2 text-sm font-bold text-neutral-500"
             >
               Cancel
             </button>
+          )}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            value={catBanner}
+            onChange={(e) => setCatBanner(e.target.value)}
+            placeholder="Category photo URL (for image-tile navigation)"
+            className={inputCls}
+          />
+          <label className="shrink-0 cursor-pointer rounded-full bg-neutral-100 px-4 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-200">
+            {catBannerBusy ? "Uploading..." : "Upload"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) =>
+                handleCatBannerUpload(e.target.files?.[0] ?? null)
+              }
+            />
+          </label>
+          {catBanner && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={catBanner}
+              alt=""
+              className="h-10 w-14 shrink-0 rounded-lg object-cover ring-1 ring-neutral-200"
+            />
           )}
         </div>
       </section>
@@ -392,6 +447,19 @@ export function MenuManager({ initialCategories, initialItems }: Props) {
                     className={`${inputCls} mt-1`}
                   />
                 </label>
+                <label className="text-sm">
+                  <span className="font-semibold">Was price (Rs, optional)</span>
+                  <input
+                    value={drawer.compare_at}
+                    onChange={(e) => setDrawer({ ...drawer, compare_at: e.target.value.replace(/\D/g, "") })}
+                    inputMode="numeric"
+                    placeholder="Shows struck through with a % OFF badge"
+                    className={`${inputCls} mt-1`}
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div />
                 <label className="text-sm">
                   <span className="font-semibold">Sort order</span>
                   <input

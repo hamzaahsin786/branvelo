@@ -99,6 +99,22 @@ Staff side (per tenant, token auth):
   scroll-spy, and item cards that fall back to a branded gradient tile
   with the item's initial when no photo exists - so imported menus
   (names + prices only) still look deliberate.
+- Storefront design system (2026-10-23, modelled on a 58-site study of
+  indolj client storefronts): brand header bar with circular logo,
+  phone pill and open/closed badge (indolj shows none - kept as our
+  edge); the banner now sits inside the content width with big rounded
+  corners and info chips (today's hours, delivery-from fee, free-
+  delivery threshold); the grid layout is the full image-top card
+  anatomy (photo, badge and % OFF chips overlaid, name, description,
+  price, full-width Add); items carry an optional compare-at "was"
+  price (Menu Manager > item > Was price) rendered struck through with
+  a % OFF badge; category navigation can switch to image tiles
+  (Settings > Appearance > Category navigation) using each category's
+  photo (Menu Manager > category photo); the search placeholder cycles
+  through real dish names; a Playfair Display serif font option serves
+  premium/traditional brands; floating WhatsApp and back-to-top buttons
+  (WhatsApp toggleable in Appearance); skeleton loading state; rich
+  footer with logo, address and phone.
 - Roles: owner/manager can write; other staff roles are read-only.
 - Settings at /admin/settings: restaurant profile, appearance (theme),
   opening hours and delivery zones. Backed by

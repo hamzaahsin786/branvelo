@@ -25,6 +25,7 @@ const LAYOUTS = [
 ];
 const FONTS = [
   { value: "nunito", name: "Nunito - friendly and rounded" },
+  { value: "playfair", name: "Playfair Display - serif, premium and traditional" },
   { value: "poppins", name: "Poppins - modern and geometric" },
   { value: "inter", name: "Inter - clean and neutral" },
 ];

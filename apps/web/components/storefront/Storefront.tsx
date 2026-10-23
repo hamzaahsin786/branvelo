@@ -17,7 +17,13 @@ interface Theme {
   accent: string;
   font: string;
   layout: "classic" | "grid" | "minimal";
-  sections: { announcement: boolean; featured: boolean; about: boolean };
+  cat_nav?: string;
+  sections: {
+    announcement: boolean;
+    featured: boolean;
+    about: boolean;
+    whatsapp?: boolean;
+  };
 }
 interface ModifierOption {
   id: number;
@@ -38,6 +44,7 @@ interface Item {
   name: string;
   description: string;
   price: number;
+  compare_at: number | null;
   photo_url: string;
   badges: string[];
   modifier_groups: ModifierGroup[];
@@ -46,6 +53,7 @@ interface Category {
   id: number;
   name: string;
   tagline: string;
+  banner_url: string;
   items: Item[];
 }
 interface Zone {
@@ -91,11 +99,27 @@ const FONT_STACKS: Record<string, string> = {
   nunito: "'Nunito', ui-rounded, system-ui, sans-serif",
   poppins: "'Poppins', system-ui, sans-serif",
   inter: "'Inter', system-ui, sans-serif",
+  playfair: "'Playfair Display', Georgia, serif",
 };
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function formatRs(n: number): string {
   return `Rs ${Math.round(n).toLocaleString("en-PK")}`;
+}
+
+/** Whole-percent discount when a compare-at ("was") price beats the price. */
+function offPct(item: Item): number {
+  if (item.compare_at && item.compare_at > item.price) {
+    return Math.round((1 - item.price / item.compare_at) * 100);
+  }
+  return 0;
+}
+
+/** wa.me link for a locally formatted phone number (03xx -> 923xx). */
+function waLink(phone: string): string {
+  let digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0")) digits = `92${digits.slice(1)}`;
+  return `https://wa.me/${digits}`;
 }
 
 export function Storefront() {
@@ -134,6 +158,35 @@ export function Storefront() {
 
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<number | null>(null);
+  const [showTop, setShowTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 700);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // The search placeholder cycles through real dish names, the way the
+  // indolj storefronts do - it advertises the menu while you browse.
+  const dishNames = useMemo(
+    () =>
+      (data?.categories ?? [])
+        .flatMap((c) => c.items.map((i) => i.name))
+        .slice(0, 8),
+    [data],
+  );
+  const [dishIdx, setDishIdx] = useState(0);
+  useEffect(() => {
+    if (dishNames.length < 2) return;
+    const t = setInterval(
+      () => setDishIdx((i) => (i + 1) % dishNames.length),
+      2600,
+    );
+    return () => clearInterval(t);
+  }, [dishNames]);
+  const searchPlaceholder = dishNames.length
+    ? `Search "${dishNames[dishIdx]}"...`
+    : "Search the menu...";
 
   const visibleCategories = useMemo(() => {
     if (!data) return [];
@@ -209,9 +262,31 @@ export function Storefront() {
   };
 
   if (state === "loading") {
+    // Skeleton that mirrors the real layout (banner, rail, cards) so the
+    // page settles into place instead of jumping - an indolj polish cue.
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FAFAFF]">
-        <p className="text-sm font-semibold text-neutral-400">Loading menu...</p>
+      <div className="min-h-screen bg-[#FAFAFF]" aria-hidden>
+        <div className="h-16 bg-neutral-200/70" />
+        <div className="mx-auto max-w-4xl px-4">
+          <div className="mt-4 h-56 animate-pulse rounded-[28px] bg-neutral-200 sm:h-72" />
+          <div className="mt-5 flex gap-2 overflow-hidden">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-neutral-200" />
+            ))}
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="overflow-hidden rounded-[20px] bg-white ring-1 ring-neutral-100">
+                <div className="aspect-[4/3] animate-pulse bg-neutral-200" />
+                <div className="space-y-2 p-3.5">
+                  <div className="h-3.5 animate-pulse rounded bg-neutral-200" />
+                  <div className="h-3 w-2/3 animate-pulse rounded bg-neutral-200" />
+                  <div className="h-8 animate-pulse rounded-full bg-neutral-200" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -259,59 +334,144 @@ export function Storefront() {
       style={{ fontFamily: FONT_STACKS[theme.font] || FONT_STACKS.nunito }}
     >
       {theme.sections.announcement && profile.announcement && (
-        <div className="px-4 py-2 text-center text-[13px] font-bold text-white" style={{ backgroundColor: primary }}>
+        <div className="px-4 py-2 text-center text-[13px] font-extrabold text-neutral-900" style={{ backgroundColor: theme.accent || "#F59E0B" }}>
           {profile.announcement}
         </div>
       )}
 
-      <header className="relative overflow-hidden text-white" style={{ backgroundColor: primary }}>
-        {profile.cover_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        )}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: profile.cover_url
-              ? "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.15) 100%)"
-              : `linear-gradient(120deg, ${primary} 0%, color-mix(in srgb, ${primary} 52%, #0B0930) 100%)`,
-          }}
-        />
-        <div className="relative mx-auto flex max-w-4xl items-end gap-3 px-4 pb-5 pt-12">
+      <header className="text-white" style={{ backgroundColor: primary }}>
+        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
           {profile.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.logo_url} alt={profile.name} className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-white/50" />
+            <img src={profile.logo_url} alt={profile.name} className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white/40" />
           ) : (
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl font-black text-white ring-2 ring-white/40">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/20 text-lg font-black text-white ring-2 ring-white/40">
               {profile.name.charAt(0).toUpperCase()}
             </span>
           )}
-          <div className="min-w-0 pb-0.5">
-            <h1 className="truncate text-2xl font-black drop-shadow-sm">{profile.name}</h1>
-            <p className="text-[13px] font-semibold text-white/85">
-              {profile.city}
-              {todayHours && !todayHours.is_closed
-                ? ` - Open today ${todayHours.open}-${todayHours.close}`
-                : todayHours
-                  ? " - Closed today"
-                  : ""}
-            </p>
+          <div className="min-w-0">
+            <p className="truncate text-base font-black leading-tight">{profile.name}</p>
+            {profile.city && (
+              <p className="truncate text-[12px] font-semibold text-white/75">{profile.city}</p>
+            )}
           </div>
-          <span className={`mb-1 ml-auto shrink-0 rounded-full px-3 py-1 text-[12px] font-extrabold ${profile.is_open ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
-            {profile.is_open ? "Open" : "Closed"}
-          </span>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {profile.phone && (
+              <a
+                href={`tel:${profile.phone.replace(/\s/g, "")}`}
+                className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[12px] font-extrabold text-white"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5" aria-hidden>
+                  <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.4 11.4 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2Z" />
+                </svg>
+                <span className="hidden min-[430px]:inline">{profile.phone}</span>
+              </a>
+            )}
+            <span className={`flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[12px] font-extrabold ${profile.is_open ? "text-green-700" : "text-red-700"}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${profile.is_open ? "bg-green-500" : "bg-red-500"}`} />
+              {profile.is_open ? "Open" : "Closed"}
+            </span>
+          </div>
         </div>
       </header>
 
-      <div className="sticky top-0 z-30 border-b border-neutral-100 bg-[#FAFAFF]/95 backdrop-blur">
-        <div className="mx-auto max-w-4xl px-4 py-2.5">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search the menu..."
-            className="w-full rounded-full bg-white px-4 py-2 text-sm font-semibold outline-none ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-300"
+      <div className="mx-auto max-w-4xl px-4">
+        <div className="relative mt-4 h-56 overflow-hidden rounded-[28px] sm:h-72" style={{ backgroundColor: primary }}>
+          {profile.cover_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          )}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: profile.cover_url
+                ? "linear-gradient(to top, rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0.12) 100%)"
+                : `linear-gradient(120deg, ${primary} 0%, color-mix(in srgb, ${primary} 52%, #0B0930) 100%)`,
+            }}
           />
-          {!query && categories.length > 1 && (
+          <div className="absolute inset-x-0 bottom-0 p-5">
+            <h1 className="text-3xl font-black text-white drop-shadow-sm sm:text-4xl">{profile.name}</h1>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {todayHours && (
+                <span className="rounded-full bg-black/35 px-3 py-1 text-[12px] font-bold text-white backdrop-blur-sm">
+                  {todayHours.is_closed
+                    ? "Closed today"
+                    : `Open today ${todayHours.open} - ${todayHours.close}`}
+                </span>
+              )}
+              {zones.length > 0 && (
+                <span className="rounded-full bg-black/35 px-3 py-1 text-[12px] font-bold text-white backdrop-blur-sm">
+                  {Math.min(...zones.map((z) => z.fee_pkr)) === 0
+                    ? "Free delivery"
+                    : `Delivery from ${formatRs(Math.min(...zones.map((z) => z.fee_pkr)))}`}
+                </span>
+              )}
+              {zones.some((z) => z.free_above_pkr) && (
+                <span className="rounded-full bg-black/35 px-3 py-1 text-[12px] font-bold text-white backdrop-blur-sm">
+                  Free delivery over {formatRs(Math.min(...zones.filter((z) => z.free_above_pkr).map((z) => z.free_above_pkr as number)))}
+                </span>
+              )}
+              {profile.city && (
+                <span className="rounded-full bg-black/35 px-3 py-1 text-[12px] font-bold text-white backdrop-blur-sm">
+                  {profile.city}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="sticky top-0 z-30 mt-4 border-b border-neutral-100 bg-[#FAFAFF]/95 backdrop-blur">
+        <div className="mx-auto max-w-4xl px-4 py-2.5">
+          <div className="relative">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden>
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.8-3.8" strokeLinecap="round" />
+            </svg>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full rounded-full bg-white py-2.5 pl-11 pr-4 text-sm font-semibold shadow-sm outline-none ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-300"
+            />
+          </div>
+          {!query && categories.length > 1 && theme.cat_nav === "tiles" && (
+            <div className="mt-2.5 flex gap-3 overflow-x-auto pb-1.5">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => scrollToCat(cat.id)}
+                  className="w-[74px] shrink-0 text-center"
+                >
+                  <span
+                    className="block h-14 w-full overflow-hidden rounded-2xl ring-1 ring-neutral-200"
+                    style={activeCat === cat.id ? { boxShadow: `0 0 0 3px ${primary}` } : undefined}
+                  >
+                    {cat.banner_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={cat.banner_url} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <span
+                        className="flex h-full w-full items-center justify-center text-lg font-black text-white"
+                        style={{ background: `linear-gradient(135deg, ${primary}, color-mix(in srgb, ${primary} 50%, #0B0930))` }}
+                      >
+                        {cat.name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </span>
+                  <span
+                    className={`mt-1 block truncate text-[11px] ${
+                      activeCat === cat.id ? "font-extrabold" : "font-bold text-neutral-500"
+                    }`}
+                    style={activeCat === cat.id ? { color: primary } : undefined}
+                  >
+                    {cat.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          {!query && categories.length > 1 && theme.cat_nav !== "tiles" && (
             <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
               {categories.map((cat) => (
                 <button
@@ -346,15 +506,18 @@ export function Storefront() {
 
         {theme.sections.featured && !query && featured.length > 0 && (
           <section className="mt-6">
-            <h2 className="text-base font-black">Featured</h2>
+            <h2 className="text-lg font-black">Featured</h2>
             <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
               {featured.map((item) => (
-                <div key={item.id} className="w-44 shrink-0 overflow-hidden rounded-2xl bg-white ring-1 ring-neutral-100">
-                  <PhotoTile item={item} primary={primary} className="h-24 w-full" />
-                  <div className="p-3">
+                <div key={item.id} className="w-52 shrink-0 overflow-hidden rounded-[20px] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.05)] ring-1 ring-black/5">
+                  <div className="relative">
+                    <PhotoTile item={item} primary={primary} className="aspect-[16/10] w-full" />
+                    <CardChips item={item} primary={primary} />
+                  </div>
+                  <div className="p-3.5">
                     <p className="truncate text-sm font-extrabold">{item.name}</p>
-                    <div className="mt-1 flex items-center justify-between">
-                      <p className="text-[13px] font-bold" style={{ color: primary }}>{formatRs(item.price)}</p>
+                    <div className="mt-1.5 flex items-center justify-between">
+                      <PriceLine item={item} primary={primary} />
                       <AddButton primary={primary} disabled={!profile.is_open} onClick={() => startAdd(item)} />
                     </div>
                   </div>
@@ -377,18 +540,44 @@ export function Storefront() {
         )}
 
         {visibleCategories.map((cat) => (
-          <section key={cat.id} id={`cat-${cat.id}`} data-cat-id={cat.id} className="mt-8 scroll-mt-36">
-            <h2 className="text-base font-black">{cat.name}</h2>
-            {cat.tagline && <p className="text-[13px] font-semibold text-neutral-500">{cat.tagline}</p>}
-            <div className={theme.layout === "grid" ? "mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3" : "mt-3 flex flex-col gap-3"}>
+          <section key={cat.id} id={`cat-${cat.id}`} data-cat-id={cat.id} className={`mt-10 ${theme.cat_nav === "tiles" ? "scroll-mt-52" : "scroll-mt-36"}`}>
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-lg font-black">{cat.name}</h2>
+                {cat.tagline && <p className="text-[13px] font-semibold text-neutral-500">{cat.tagline}</p>}
+              </div>
+              <span className="shrink-0 text-[12px] font-bold text-neutral-400">
+                {cat.items.length} item{cat.items.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div className={theme.layout === "grid" ? "mt-3.5 grid grid-cols-2 gap-3.5 sm:grid-cols-3" : "mt-3 flex flex-col gap-3"}>
               {cat.items.map((item) =>
                 theme.layout === "grid" ? (
-                  <article key={item.id} className="overflow-hidden rounded-2xl bg-white ring-1 ring-neutral-100">
-                    <PhotoTile item={item} primary={primary} className="h-28 w-full" />
-                    <div className="p-3">
-                      <ItemText item={item} primary={primary} />
-                      <div className="mt-2 flex justify-end">
-                        <AddButton primary={primary} disabled={!profile.is_open} onClick={() => startAdd(item)} />
+                  <article key={item.id} className="flex flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.05)] ring-1 ring-black/5">
+                    <div className="relative">
+                      <PhotoTile item={item} primary={primary} className="aspect-[4/3] w-full" />
+                      <CardChips item={item} primary={primary} />
+                    </div>
+                    <div className="flex flex-1 flex-col p-3.5">
+                      <p className="text-[15px] font-extrabold leading-snug">{item.name}</p>
+                      {item.description ? (
+                        <p className="mt-1 line-clamp-2 min-h-[2.5rem] text-[13px] font-medium leading-snug text-neutral-500">{item.description}</p>
+                      ) : (
+                        <div className="min-h-[2.5rem]" />
+                      )}
+                      {item.modifier_groups.length > 0 && (
+                        <p className="mt-1 text-[12px] font-semibold text-neutral-400">{item.modifier_groups.map((g) => g.name).join(" - ")} available</p>
+                      )}
+                      <div className="mt-auto pt-2.5">
+                        <PriceLine item={item} primary={primary} />
+                        <button
+                          onClick={() => startAdd(item)}
+                          disabled={!profile.is_open}
+                          className="mt-2.5 w-full rounded-full py-2 text-[13px] font-extrabold text-white disabled:opacity-40"
+                          style={{ backgroundColor: primary }}
+                        >
+                          Add
+                        </button>
                       </div>
                     </div>
                   </article>
@@ -442,8 +631,60 @@ export function Storefront() {
 
         <FeedbackBlock primary={primary} />
 
-        <footer className="mt-10 text-center text-[12px] font-bold text-neutral-400"><PoweredBy className="hover:text-neutral-600 hover:underline" /></footer>
+        <footer className="mt-12 border-t border-neutral-200/70 pb-2 pt-8 text-center">
+          {profile.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.logo_url} alt={profile.name} className="mx-auto h-12 w-12 rounded-full object-cover ring-1 ring-neutral-200" />
+          ) : (
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full text-lg font-black text-white" style={{ backgroundColor: primary }}>
+              {profile.name.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <p className="mt-3 text-base font-black">{profile.name}</p>
+          {(profile.address || profile.city) && (
+            <p className="mt-1 text-[13px] font-semibold text-neutral-500">
+              {profile.address}
+              {profile.address && profile.city ? ", " : ""}
+              {profile.city}
+            </p>
+          )}
+          {profile.phone && (
+            <p className="mt-0.5 text-[13px] font-semibold text-neutral-500">
+              <a href={`tel:${profile.phone.replace(/\s/g, "")}`} className="hover:underline">{profile.phone}</a>
+            </p>
+          )}
+          <p className="mt-4 text-[12px] font-bold text-neutral-400">
+            <PoweredBy className="hover:text-neutral-600 hover:underline" />
+          </p>
+        </footer>
       </main>
+
+      <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-2">
+        {showTop && (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            aria-label="Back to top"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-600 shadow-lg ring-1 ring-neutral-200"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" className="h-5 w-5" aria-hidden>
+              <path d="M12 19V5m-7 7 7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
+        {theme.sections.whatsapp !== false && profile.phone && (
+          <a
+            href={waLink(profile.phone)}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Chat on WhatsApp"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6" aria-hidden>
+              <path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.39-1.47-.88-.79-1.47-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.11 3.22 5.1 4.51.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2.13-1.42.37-.7.37-1.3.26-1.42-.11-.12-.28-.2-.58-.35M12.05 21.79h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 0 1 9.88 9.89c0 5.45-4.44 9.88-9.89 9.88m8.42-18.3A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.9c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.9 11.9 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.34 11.89-11.9 0-3.18-1.24-6.16-3.47-8.41" />
+            </svg>
+          </a>
+        )}
+      </div>
 
       {cartCount > 0 && !checkoutOpen && (
         <button
@@ -513,6 +754,40 @@ function PhotoTile({
   );
 }
 
+/** Badge + discount chips overlaid on a card photo, indolj style: the
+ * item's first badge top-left in the brand color, the % OFF chip top-right
+ * in red when a compare-at price is set. */
+function CardChips({ item, primary }: { item: Item; primary: string }) {
+  const off = offPct(item);
+  if (!item.badges[0] && !off) return null;
+  return (
+    <>
+      {item.badges[0] && (
+        <span className="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm" style={{ backgroundColor: primary }}>
+          {item.badges[0]}
+        </span>
+      )}
+      {off > 0 && (
+        <span className="absolute right-2 top-2 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm">
+          {off}% off
+        </span>
+      )}
+    </>
+  );
+}
+
+/** Price with the struck-through compare-at price when the item is on sale. */
+function PriceLine({ item, primary }: { item: Item; primary: string }) {
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-1.5">
+      <span className="text-sm font-black" style={{ color: primary }}>{formatRs(item.price)}</span>
+      {offPct(item) > 0 && (
+        <span className="text-xs font-bold text-neutral-400 line-through">{formatRs(item.compare_at as number)}</span>
+      )}
+    </p>
+  );
+}
+
 function AddButton({ primary, disabled, onClick }: { primary: string; disabled: boolean; onClick: () => void }) {
   return (
     <button
@@ -538,7 +813,9 @@ function ItemText({ item, primary }: { item: Item; primary: string }) {
         )}
       </div>
       {item.description && <p className="mt-0.5 line-clamp-2 text-[13px] font-medium text-neutral-500">{item.description}</p>}
-      <p className="mt-1 text-sm font-black" style={{ color: primary }}>{formatRs(item.price)}</p>
+      <div className="mt-1">
+        <PriceLine item={item} primary={primary} />
+      </div>
       {item.modifier_groups.length > 0 && (
         <p className="mt-0.5 text-[12px] font-semibold text-neutral-400">{item.modifier_groups.map((g) => g.name).join(" - ")} available</p>
       )}

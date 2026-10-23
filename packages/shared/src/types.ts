@@ -60,6 +60,7 @@ export interface Category {
   name_ur: string | null;
   tagline: string | null;
   icon: string | null;
+  banner_url: string | null;
   sort: number;
   active: boolean;
 }
@@ -74,6 +75,7 @@ export interface MenuItem {
   name_ur: string | null;
   description: string | null;
   price: number; // PKR, no decimals
+  compare_at: number | null; // struck-through "was" price when higher
   photo_url: string | null;
   badges: string[];
   sort: number;

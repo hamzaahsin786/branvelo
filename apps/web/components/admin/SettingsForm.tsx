@@ -9,7 +9,13 @@ export interface Theme {
   accent: string;
   font: string;
   layout: string;
-  sections: { announcement: boolean; featured: boolean; about: boolean };
+  cat_nav: string;
+  sections: {
+    announcement: boolean;
+    featured: boolean;
+    about: boolean;
+    whatsapp: boolean;
+  };
 }
 
 export interface HoursRow {
@@ -61,8 +67,9 @@ const DEFAULT_THEME: Theme = {
   primary: "#2C24A3",
   accent: "#F59E0B",
   font: "nunito",
-  layout: "classic",
-  sections: { announcement: true, featured: true, about: true },
+  layout: "grid",
+  cat_nav: "pills",
+  sections: { announcement: true, featured: true, about: true, whatsapp: true },
 };
 
 function normalizeTheme(raw: Partial<Theme> | undefined): Theme {
@@ -430,6 +437,7 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
               <option value="nunito">Nunito</option>
               <option value="poppins">Poppins</option>
               <option value="inter">Inter</option>
+              <option value="playfair">Playfair Display (serif, premium)</option>
             </select>
           </label>
           <label className="text-sm">
@@ -447,12 +455,32 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
             </select>
           </label>
         </div>
+        <div className="mt-3">
+          <label className="text-sm">
+            <span className="font-semibold">Category navigation</span>
+            <select
+              value={theme.cat_nav}
+              onChange={(e) =>
+                setTheme((t) => ({ ...t, cat_nav: e.target.value }))
+              }
+              className={`${inputCls} mt-1`}
+            >
+              <option value="pills">Pills</option>
+              <option value="tiles">Image tiles (uses category photos)</option>
+            </select>
+          </label>
+          <p className="mt-1 text-xs text-neutral-500">
+            Tip: add a photo to each category in the Menu Manager and the
+            tiles look like the big chains' menus.
+          </p>
+        </div>
         <div className="mt-3 flex flex-col gap-2">
           {(
             [
               ["announcement", "Announcement bar"],
               ["featured", "Featured items section"],
               ["about", "About section"],
+              ["whatsapp", "WhatsApp chat button"],
             ] as const
           ).map(([key, label]) => (
             <label

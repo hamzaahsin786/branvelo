@@ -23,8 +23,9 @@ HANDOFF_SALT = "branvelo.platform-handoff"
 HANDOFF_MAX_AGE = 120  # seconds; the browser redirect is immediate
 
 _HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
-_FONTS = {"nunito", "poppins", "inter"}
+_FONTS = {"nunito", "poppins", "inter", "playfair"}
 _LAYOUTS = {"classic", "grid", "minimal"}
+_CAT_NAVS = {"pills", "tiles"}
 
 
 def _clean_theme(raw) -> dict:
@@ -42,6 +43,8 @@ def _clean_theme(raw) -> dict:
         theme["font"] = raw["font"]
     if raw.get("layout") in _LAYOUTS:
         theme["layout"] = raw["layout"]
+    if raw.get("cat_nav") in _CAT_NAVS:
+        theme["cat_nav"] = raw["cat_nav"]
     sections = raw.get("sections")
     if isinstance(sections, dict):
         for key in theme["sections"]:

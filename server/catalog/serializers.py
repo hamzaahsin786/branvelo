@@ -51,6 +51,9 @@ class MenuItemSerializer(serializers.ModelSerializer):
         source="category", queryset=Category.objects.all()
     )
     price = serializers.IntegerField(source="price_pkr", default=0)
+    compare_at = serializers.IntegerField(
+        source="compare_at_pkr", required=False, allow_null=True, default=None
+    )
     available = serializers.BooleanField(source="is_available", default=True)
     modifier_groups = ModifierGroupSerializer(many=True, read_only=True)
 
@@ -58,8 +61,8 @@ class MenuItemSerializer(serializers.ModelSerializer):
         model = MenuItem
         fields = [
             "id", "category_id", "name", "name_ur", "description", "price",
-            "photo_url", "badges", "sort", "available", "prep_minutes",
-            "modifier_groups",
+            "compare_at", "photo_url", "badges", "sort", "available",
+            "prep_minutes", "modifier_groups",
         ]
 
 

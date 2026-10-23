@@ -12,8 +12,14 @@ DEFAULT_THEME = {
     "primary": "#2C24A3",
     "accent": "#F59E0B",
     "font": "nunito",
-    "layout": "classic",
-    "sections": {"announcement": True, "featured": True, "about": True},
+    "layout": "grid",
+    "cat_nav": "pills",
+    "sections": {
+        "announcement": True,
+        "featured": True,
+        "about": True,
+        "whatsapp": True,
+    },
 }
 
 
@@ -104,6 +110,11 @@ class MenuItem(models.Model):
     name_ur = models.CharField(max_length=120, blank=True)
     description = models.TextField(blank=True)
     price_pkr = models.IntegerField(default=0, help_text="Whole rupees, no decimals.")
+    compare_at_pkr = models.IntegerField(
+        null=True, blank=True,
+        help_text="Original price before a discount, whole rupees. Shown "
+        "struck through next to price_pkr when higher.",
+    )
     photo_url = models.URLField(blank=True)
     badges = models.JSONField(
         default=list, blank=True,
