@@ -370,6 +370,32 @@ class ImagePreviewView(_ImportView):
         )
 
 
+def _gemini_models():
+    """Vision models to try, in order. Google retires model names over
+    time (a retired name returns 404), so the default is followed by
+    fallbacks; GEMINI_MODEL in the server environment pins the first
+    choice without a code change."""
+    models = []
+    pinned = os.environ.get("GEMINI_MODEL", "").strip()
+    if pinned:
+        models.append(pinned)
+    for name in ("gemini-2.5-flash", "gemini-2.5-flash-lite",
+                 "gemini-flash-latest"):
+        if name not in models:
+            models.append(name)
+    return models
+
+
+def _google_error_message(exc):
+    """Best-effort read of Google's own error text from an HTTPError."""
+    try:
+        payload = json.loads(exc.read().decode("utf-8"))
+        message = payload.get("error", {}).get("message", "")
+        return str(message).strip()[:200]
+    except Exception:
+        return ""
+
+
 def _gemini_extract(api_key, files):
     parts = [{"text": _GEMINI_PROMPT}]
     for f in files:
@@ -390,28 +416,46 @@ def _gemini_extract(api_key, files):
             },
         }
     ).encode("utf-8")
-    request = urllib.request.Request(
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        "gemini-2.0-flash:generateContent",
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "x-goog-api-key": api_key,
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=60) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        raise ValueError(
-            f"The photo reader returned an error ({exc.code}). "
-            "Check the Gemini API key and try again."
+
+    payload = None
+    last_404 = ""
+    for model in _gemini_models():
+        request = urllib.request.Request(
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent",
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "x-goog-api-key": api_key,
+            },
+            method="POST",
         )
-    except Exception:
+        try:
+            with urllib.request.urlopen(request, timeout=60) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as exc:
+            message = _google_error_message(exc)
+            if exc.code == 404:
+                # Model name retired or unknown - try the next one.
+                last_404 = message
+                continue
+            detail = f": {message}" if message else ""
+            raise ValueError(
+                f"The photo reader returned an error ({exc.code}){detail} "
+                "Check the Gemini API key and try again."
+            )
+        except Exception:
+            raise ValueError(
+                "Could not reach the photo reader. Check the server "
+                "connection and try again."
+            )
+    if payload is None:
+        detail = f": {last_404}" if last_404 else ""
         raise ValueError(
-            "Could not reach the photo reader. Check the server "
-            "connection and try again."
+            "None of the photo reader models are available for this "
+            f"API key{detail} If this keeps happening, set GEMINI_MODEL "
+            "in the server settings to a current Gemini vision model."
         )
     try:
         text = payload["candidates"][0]["content"]["parts"][0]["text"]

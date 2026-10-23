@@ -44,6 +44,9 @@ services:
       # Optional: free Gemini API key (Google AI Studio) - enables the
       # menu photo import in the admin. Sheet import works without it.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # Optional: pin a specific Gemini vision model (defaults have
+      # built-in fallbacks; only needed if Google retires them all).
+      GEMINI_MODEL: ${GEMINI_MODEL:-}
     ports:
       - "8000:8000"
     depends_on:
