@@ -124,4 +124,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_THROTTLE_RATES": {
+        # Public signup surface: generous for real users, useless for abuse.
+        "signup": "10/hour",
+        "slug_check": "60/min",
+    },
 }

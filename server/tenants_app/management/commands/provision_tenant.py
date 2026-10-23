@@ -18,6 +18,11 @@ class Command(BaseCommand):
         parser.add_argument("--owner-name", default="")
         parser.add_argument("--owner-email", required=True)
         parser.add_argument("--owner-phone", default="")
+        parser.add_argument(
+            "--owner-password", default=None,
+            help="Sets the owner account password. Omit to create the "
+            "account with an unusable password (set later).",
+        )
         parser.add_argument("--city", default="")
         parser.add_argument(
             "--domain-suffix", default=None,
@@ -32,6 +37,7 @@ class Command(BaseCommand):
                 slug=options["slug"],
                 owner_name=options["owner_name"],
                 owner_email=options["owner_email"],
+                owner_password=options["owner_password"],
                 owner_phone=options["owner_phone"],
                 city=options["city"],
                 domain_suffix=options["domain_suffix"],

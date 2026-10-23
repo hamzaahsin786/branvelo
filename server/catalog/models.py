@@ -1,7 +1,24 @@
 """Restaurant profile: exactly one row per tenant schema (docs/04 section 2).
 Seeded at provisioning with the tenant's signup details; the owner edits it
 in the setup wizard (Phase 3) and dashboard (Phase 4+)."""
+import datetime
+
 from django.db import models
+
+# The platform default theme (docs/01 guardrails: bounded tokens only).
+# Signup personalizes `primary`, `font`, `layout` and `sections`; the
+# Appearance page (later phase) edits the same shape.
+DEFAULT_THEME = {
+    "primary": "#2C24A3",
+    "accent": "#F59E0B",
+    "font": "nunito",
+    "layout": "classic",
+    "sections": {"announcement": True, "featured": True, "about": True},
+}
+
+
+def default_theme():
+    return {**DEFAULT_THEME, "sections": dict(DEFAULT_THEME["sections"])}
 
 
 class RestaurantProfile(models.Model):
@@ -16,8 +33,9 @@ class RestaurantProfile(models.Model):
         default=True, help_text="Manual override: closed stops new orders."
     )
     theme = models.JSONField(
-        default=dict, blank=True,
-        help_text="Colors/fonts, same shape as the v1 storefront theming.",
+        default=default_theme, blank=True,
+        help_text="Brand tokens (colors, font, layout, sections). Bounded "
+        "set by design; see the guardrails in docs/01-system-design.md.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -27,3 +45,22 @@ class RestaurantProfile(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class OpeningHours(models.Model):
+    """One row per weekday (0 = Monday .. 6 = Sunday). close_time earlier
+    than open_time means the restaurant closes after midnight."""
+
+    weekday = models.SmallIntegerField(unique=True)
+    open_time = models.TimeField(default=datetime.time(11, 0))
+    close_time = models.TimeField(default=datetime.time(23, 0))
+    is_closed = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "opening_hours"
+        ordering = ["weekday"]
+
+    def __str__(self):
+        if self.is_closed:
+            return f"day {self.weekday}: closed"
+        return f"day {self.weekday}: {self.open_time}-{self.close_time}"

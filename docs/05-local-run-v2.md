@@ -56,6 +56,22 @@ set in `.env`), then the dev server.
 - Wipe everything and re-prove from zero: `docker compose down -v` then
   `docker compose up --build`.
 
+## Phase 3: public signup
+
+The marketing site's signup form (`/platform/signup`) is live: a restaurant
+picks its web address (checked live against `GET /api/platform/slug-check`),
+fills its details, chooses brand color / layout / font and storefront
+sections, and `POST /api/platform/signup` creates everything in one go:
+tenant + schema, subdomain, 14-day trial subscription, the restaurant
+profile with their theme, default opening hours (11:00-23:00 daily), and
+the owner staff account (login = signup email + chosen password).
+
+Try it: `docker compose up`, open http://localhost:3000/platform/signup,
+sign up as e.g. `spice-route`, then check the platform admin — the tenant
+is there — and http://spice-route.localhost:8000/health answers from the
+new tenant's schema. (At deployment, `branvelo.com` and `www` get domain
+rows pointing at the public tenant so this same API serves production.)
+
 ## Notes
 
 - Your code edits on your machine reflect live inside the containers
