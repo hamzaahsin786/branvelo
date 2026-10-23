@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { staffFetch, useStaffApi } from "@/lib/staff-api";
 
 interface PreviewRow {
@@ -70,20 +70,22 @@ export function MenuImport({ onClose, onImported }: Props) {
     [rows],
   );
 
-  async function runPreview(kind: "sheet" | "photo") {
+  async function runPreview(kind: "sheet" | "photo", files?: File[]) {
     setError(null);
     setBusy(true);
     try {
       const form = new FormData();
       let path: string;
       if (kind === "sheet") {
-        if (!sheetFile) throw new Error("Choose a spreadsheet file first.");
-        form.append("file", sheetFile);
+        const file = files?.[0] ?? sheetFile;
+        if (!file) throw new Error("Choose a spreadsheet file first.");
+        form.append("file", file);
         path = "/api/staff/catalog/import/sheet-preview";
       } else {
-        if (!photoFiles.length)
+        const chosen = files ?? photoFiles;
+        if (!chosen.length)
           throw new Error("Choose at least one menu photo first.");
-        photoFiles.forEach((f) => form.append("files", f));
+        chosen.forEach((f) => form.append("files", f));
         path = "/api/staff/catalog/import/image-preview";
       }
       const res = await staffFetch(path, { method: "POST", body: form });
@@ -149,8 +151,75 @@ export function MenuImport({ onClose, onImported }: Props) {
   const setRow = (idx: number, patch: Partial<EditRow>) =>
     setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
 
+  const [dragOver, setDragOver] = useState(false);
+
+  // Drag-and-drop and paste: images route to the photo import and sheets
+  // to the spreadsheet import, whichever tab is active, and the preview
+  // runs straight away.
+  const takeFiles = (list: FileList | File[]) => {
+    if (stage !== "pick") return;
+    const files = Array.from(list);
+    if (!files.length) return;
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    const sheet = files.find(
+      (f) =>
+        /\.(csv|xlsx)$/i.test(f.name) ||
+        f.type.includes("csv") ||
+        f.type.includes("spreadsheet") ||
+        f.type.includes("excel"),
+    );
+    if (images.length) {
+      const chosen = images.slice(0, 4);
+      setTab("photo");
+      setPhotoFiles(chosen);
+      void runPreview("photo", chosen);
+    } else if (sheet) {
+      setTab("sheet");
+      setSheetFile(sheet);
+      void runPreview("sheet", [sheet]);
+    } else {
+      setError(
+        "That file is not supported here. Drop a CSV or Excel sheet, or menu photos.",
+      );
+    }
+  };
+
+  useEffect(() => {
+    // While the panel is open, stop the browser from opening a dropped
+    // file when the drop misses the panel, and catch pasted images.
+    const stopBrowser = (e: DragEvent) => e.preventDefault();
+    const onPaste = (e: ClipboardEvent) => {
+      const files = e.clipboardData?.files;
+      if (files && files.length) takeFiles(files);
+    };
+    window.addEventListener("dragover", stopBrowser);
+    window.addEventListener("drop", stopBrowser);
+    document.addEventListener("paste", onPaste);
+    return () => {
+      window.removeEventListener("dragover", stopBrowser);
+      window.removeEventListener("drop", stopBrowser);
+      document.removeEventListener("paste", onPaste);
+    };
+    // takeFiles reads the latest stage through this effect's closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
+
   return (
-    <section className="mb-4 rounded-2xl bg-white p-4 ring-1 ring-neutral-200">
+    <section
+      className={`mb-4 rounded-2xl bg-white p-4 ring-1 ${
+        dragOver ? "ring-2 ring-neutral-900" : "ring-neutral-200"
+      }`}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        takeFiles(e.dataTransfer.files);
+      }}
+    >
       <div className="flex items-center justify-between">
         <h2 className="text-base font-extrabold">Import menu</h2>
         <button
@@ -168,7 +237,11 @@ export function MenuImport({ onClose, onImported }: Props) {
       )}
 
       {stage === "pick" && (
-        <div className="mt-3">
+        <div
+          className={`mt-3 rounded-xl border-2 border-dashed p-3 ${
+            dragOver ? "border-neutral-900 bg-neutral-50" : "border-neutral-200"
+          }`}
+        >
           <div className="flex gap-2">
             {(
               [
@@ -193,9 +266,10 @@ export function MenuImport({ onClose, onImported }: Props) {
           {tab === "sheet" ? (
             <div className="mt-4">
               <p className="text-sm text-neutral-500">
-                Upload a CSV or Excel file. Best with a header row: name,
-                price, description, category. Without headers, columns are
-                read as A name, B price, C description, D category.
+                Upload a CSV or Excel file, or drag and drop it onto this
+                panel. Best with a header row: name, price, description,
+                category. Without headers, columns are read as A name, B
+                price, C description, D category.
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <label className="cursor-pointer rounded-full bg-neutral-100 px-4 py-2.5 text-sm font-bold text-neutral-700 hover:bg-neutral-200">
@@ -224,9 +298,10 @@ export function MenuImport({ onClose, onImported }: Props) {
           ) : (
             <div className="mt-4">
               <p className="text-sm text-neutral-500">
-                Upload up to 4 clear photos of the printed menu. An AI reader
-                extracts the items and prices for you to review - always
-                check them before importing.
+                Upload up to 4 clear photos of the printed menu, drag and
+                drop them onto this panel, or copy an image and paste it
+                here (Ctrl+V). An AI reader extracts the items and prices
+                for you to review - always check them before importing.
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <label className="cursor-pointer rounded-full bg-neutral-100 px-4 py-2.5 text-sm font-bold text-neutral-700 hover:bg-neutral-200">
