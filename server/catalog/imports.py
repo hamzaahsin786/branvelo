@@ -418,7 +418,7 @@ def _gemini_extract(api_key, files):
     ).encode("utf-8")
 
     payload = None
-    last_404 = ""
+    last_error = ""
     for model in _gemini_models():
         request = urllib.request.Request(
             "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -436,9 +436,11 @@ def _gemini_extract(api_key, files):
             break
         except urllib.error.HTTPError as exc:
             message = _google_error_message(exc)
-            if exc.code == 404:
-                # Model name retired or unknown - try the next one.
-                last_404 = message
+            if exc.code in (404, 429, 503):
+                # 404: model name retired. 429/503: that model is rate
+                # limited or overloaded. Either way another model in the
+                # list may answer, so keep going.
+                last_error = f"({exc.code}) {message}".strip()
                 continue
             detail = f": {message}" if message else ""
             raise ValueError(
@@ -451,11 +453,12 @@ def _gemini_extract(api_key, files):
                 "connection and try again."
             )
     if payload is None:
-        detail = f": {last_404}" if last_404 else ""
+        detail = f": {last_error}" if last_error else ""
         raise ValueError(
-            "None of the photo reader models are available for this "
-            f"API key{detail} If this keeps happening, set GEMINI_MODEL "
-            "in the server settings to a current Gemini vision model."
+            "The photo reader is busy or unavailable on every model "
+            f"right now{detail} Please wait a minute and try again. "
+            "If this keeps happening, set GEMINI_MODEL in the server "
+            "settings to a current Gemini vision model."
         )
     try:
         text = payload["candidates"][0]["content"]["parts"][0]["text"]
