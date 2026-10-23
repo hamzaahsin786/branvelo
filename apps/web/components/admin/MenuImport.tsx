@@ -237,11 +237,7 @@ export function MenuImport({ onClose, onImported }: Props) {
       )}
 
       {stage === "pick" && (
-        <div
-          className={`mt-3 rounded-xl border-2 border-dashed p-3 ${
-            dragOver ? "border-neutral-900 bg-neutral-50" : "border-neutral-200"
-          }`}
-        >
+        <div className="mt-3">
           <div className="flex gap-2">
             {(
               [
@@ -261,6 +257,22 @@ export function MenuImport({ onClose, onImported }: Props) {
                 {label}
               </button>
             ))}
+          </div>
+
+          <div
+            className={`mt-3 rounded-xl border-2 border-dashed px-4 py-6 text-center ${
+              dragOver
+                ? "border-neutral-900 bg-neutral-100"
+                : "border-neutral-300 bg-neutral-50"
+            }`}
+          >
+            <p className="text-sm font-extrabold text-neutral-700">
+              {dragOver ? "Release to read it" : "Drag and drop your file here"}
+            </p>
+            <p className="mt-1 text-xs font-semibold text-neutral-400">
+              A spreadsheet (.csv or .xlsx) or menu photos - or copy an image
+              and paste it with Ctrl+V
+            </p>
           </div>
 
           {tab === "sheet" ? (
