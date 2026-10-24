@@ -1,6 +1,6 @@
 """Attach the bundled sample dish photos to one tenant's menu.
 
-Purpose: visual checking only. The 18 sample photos ship in the repo at
+Purpose: visual checking only. The 22 sample photos ship in the repo at
 apps/web/public/menu/ (served by the web app at /menu/<file>.jpg), and
 this command points a tenant's menu items, category banners and cover
 photo at them by matching item and category names. It only fills empty
@@ -26,6 +26,9 @@ ITEM_RULES = [
     ("loaded fries", "loaded-fries.jpg"),
     ("masala fries", "masala-fries.jpg"),
     ("fries", "fries.jpg"),
+    ("steak", "chicken-steak.jpg"),
+    ("fried chicken", "fried-chicken.jpg"),
+    ("panini", "panini.jpg"),
     ("shami sandwich", "shami-sandwich.jpg"),
     ("shami", "shami-burger.jpg"),
     ("zinger sandwich", "zinger-sandwich.jpg"),
@@ -41,11 +44,14 @@ ITEM_RULES = [
     ("wrap", "bbq-wrap.jpg"),
     ("paratha roll", "paratha-roll.jpg"),
     ("roll", "paratha-roll.jpg"),
+    ("plater", "shawarma-platter.jpg"),
     ("shawarma platter", "shawarma-platter.jpg"),
     ("platter", "shawarma-platter.jpg"),
     ("shawarma", "chicken-shawarma.jpg"),
     ("hot wings", "hot-wings.jpg"),
     ("wings", "hot-wings.jpg"),
+    ("water bottle", "water-bottle.jpg"),
+    ("bottle", "water-bottle.jpg"),
     ("burger", "beef-burger.jpg"),
 ]
 
