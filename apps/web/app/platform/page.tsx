@@ -15,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "Branvelo - Your restaurant. Your orders. Zero commission.",
   description:
-    "Your own ordering website and dashboard for one flat monthly fee. No commission on your orders, ever.",
+    "Your own ordering website and dashboard for one flat monthly fee. No commission on your orders, ever. Deals, smart upsells, tax handling, branches and rider management included.",
 };
 
 function SectionHeading({
@@ -80,7 +80,7 @@ const PRODUCTS = [
     name: "Your own ordering website",
     status: "Available now",
     live: true,
-    body: "Your menu, your brand, your link. Customers order from you, not a marketplace page that lists you beside every rival.",
+    body: "Your menu, your brand, your colors, your link. Customers order from you, not a marketplace page that lists you beside every rival.",
     icon: (
       <Icon>
         <path d="M4 7l1.2-3h13.6L20 7" />
@@ -94,7 +94,7 @@ const PRODUCTS = [
     name: "Admin dashboard",
     status: "Available now",
     live: true,
-    body: "Every order, live. One tap per stage: confirm, cook, dispatch. Your whole day at a glance.",
+    body: "Every order, live. One tap per stage: confirm, cook, dispatch. Your whole day at a glance, plus staff accounts and rider assignment.",
     icon: (
       <Icon>
         <rect x="3.5" y="3.5" width="7" height="7" rx="1.6" />
@@ -108,7 +108,7 @@ const PRODUCTS = [
     name: "Live order tracking",
     status: "Available now",
     live: true,
-    body: "Customers watch their food move towards them. You get fewer where-is-my-order calls.",
+    body: "Customers watch their food move towards them, and can schedule orders ahead. You get fewer where-is-my-order calls.",
     icon: (
       <Icon>
         <path d="M12 21s-6.5-5.2-6.5-10.2A6.5 6.5 0 0 1 12 4.3a6.5 6.5 0 0 1 6.5 6.5C18.5 15.8 12 21 12 21Z" />
@@ -117,26 +117,63 @@ const PRODUCTS = [
     ),
   },
   {
-    name: "WhatsApp order alerts",
-    status: "Coming soon",
-    live: false,
-    body: "New orders ping you on WhatsApp. Customers get updates where they actually read them.",
+    name: "Deals and coupons",
+    status: "Available now",
+    live: true,
+    body: "Bundle items into deals with SAVE % badges, run coupon codes, and put your best value where customers see it first.",
     icon: (
       <Icon>
-        <path d="M20 12a8 8 0 1 1-3.6-6.7L20 4l-1.2 3.4c.8 1.3 1.2 2.9 1.2 4.6Z" />
-        <path d="M8.5 10.5c.5 2.5 3.5 5.5 6 6l1.8-1.8 2.7 1.3c-.3 1.6-1 2-2.4 1.8C11.9 17.2 6.8 12.1 6.2 7.4 6 6 6.4 5.3 8 5l1.3 2.7-1.8 1.8Z" transform="scale(0.92) translate(1,1)" />
+        <path d="M20 12l-8 8-9-9V4h7l10 8Z" />
+        <circle cx="7.5" cy="7.5" r="1.5" />
       </Icon>
     ),
   },
   {
-    name: "AI phone ordering",
-    status: "Coming later",
-    live: false,
-    body: "An AI answers your phone in Urdu or English and takes the order. Sold only when it works properly.",
+    name: "Smart upsells",
+    status: "Available now",
+    live: true,
+    body: "The cart suggests what goes together, learned from your own orders, not guessed. Fries with burgers, drinks with deals. Order values grow on their own.",
     icon: (
       <Icon>
-        <path d="M5 4h4l1.5 4.5L8 10a12 12 0 0 0 6 6l1.5-2.5L20 15v4a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 3 6.2 2 2 0 0 1 5 4Z" />
-        <path d="M17.5 3.5l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6.6-1.6Z" />
+        <path d="M3 17l6-6 4 4 8-8" />
+        <path d="M14 7h7v7" />
+      </Icon>
+    ),
+  },
+  {
+    name: "Tax, handled",
+    status: "Available now",
+    live: true,
+    body: "Your country's rules, applied at checkout and shown as its own line. Pakistan's cash and digital split included. Override any rate in Settings.",
+    icon: (
+      <Icon>
+        <path d="M4 5h16M4 10h16M4 15h10M4 20h7" />
+        <path d="M17 15l2 2 4-4" />
+      </Icon>
+    ),
+  },
+  {
+    name: "Branches",
+    status: "Available now",
+    live: true,
+    body: "Every outlet on one site for pickup, each with its address and directions. One menu, every location, no extra site per branch.",
+    icon: (
+      <Icon>
+        <path d="M3 21h18M5 21V8l7-5 7 5v13" />
+        <path d="M9 21v-6h6v6" />
+      </Icon>
+    ),
+  },
+  {
+    name: "Team and riders",
+    status: "Available now",
+    live: true,
+    body: "Create staff accounts with roles, assign deliveries from the Orders board, and give riders their own view with cash collection totals.",
+    icon: (
+      <Icon>
+        <circle cx="9" cy="8" r="3.5" />
+        <path d="M2.5 20c0-3 2.9-5 6.5-5s6.5 2 6.5 5" />
+        <path d="M16 4.5a3.5 3.5 0 0 1 0 7M17.5 15.5c2 .7 4 2.3 4 4.5" />
       </Icon>
     ),
   },
@@ -151,6 +188,31 @@ const PRODUCTS = [
         <path d="M10 20V4" />
         <path d="M16 20v-7" />
         <path d="M21 20H3" />
+      </Icon>
+    ),
+  },
+];
+
+const ON_THE_WAY = [
+  {
+    name: "WhatsApp order alerts",
+    status: "Coming soon",
+    body: "New orders ping you on WhatsApp. Customers get updates where they actually read them.",
+    icon: (
+      <Icon>
+        <path d="M20 12a8 8 0 1 1-3.6-6.7L20 4l-1.2 3.4c.8 1.3 1.2 2.9 1.2 4.6Z" />
+        <path d="M8.5 10.5c.5 2.5 3.5 5.5 6 6l1.8-1.8 2.7 1.3c-.3 1.6-1 2-2.4 1.8C11.9 17.2 6.8 12.1 6.2 7.4 6 6 6.4 5.3 8 5l1.3 2.7-1.8 1.8Z" transform="scale(0.92) translate(1,1)" />
+      </Icon>
+    ),
+  },
+  {
+    name: "AI phone ordering",
+    status: "Coming later",
+    body: "An AI answers your phone in Urdu or English and takes the order. Sold only when it works properly.",
+    icon: (
+      <Icon>
+        <path d="M5 4h4l1.5 4.5L8 10a12 12 0 0 0 6 6l1.5-2.5L20 15v4a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 3 6.2 2 2 0 0 1 5 4Z" />
+        <path d="M17.5 3.5l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6.6-1.6Z" />
       </Icon>
     ),
   },
@@ -177,11 +239,23 @@ const FAQS = [
   },
   {
     q: "How do customers pay?",
-    a: "Cash on delivery from day one, plus JazzCash and Easypaisa for advance payment. Money goes to your accounts, never through us.",
+    a: "Cash on delivery from day one, plus JazzCash and Easypaisa for advance payment. Money goes to your accounts, never through us. In Pakistan, digital payments also mean the lower 8% GST rate for your customers.",
+  },
+  {
+    q: "How is tax handled?",
+    a: "At checkout, as its own line, using your country's rules. In Pakistan that means the provincial split: Punjab 16% on cash and 8% on digital payments, Sindh 15% and 8%. JazzCash and Easypaisa count as digital. Other countries get their VAT or GST defaults, and you can override any rate in Settings. Menu prices stay as you set them; tax is added on top.",
   },
   {
     q: "What if I have more than one branch?",
-    a: "Each branch gets its own site and dashboard, managed from one account. Tell us during signup and we set them up together.",
+    a: "One restaurant lists all its outlets for pickup on the same site, each with its address and a directions link, and customers pick their outlet at checkout. If you want a fully separate menu and dashboard per branch, that is a separate site per branch instead. Tell us during signup and we set it up the way your business runs.",
+  },
+  {
+    q: "Can customers order ahead?",
+    a: "Yes. Customers can schedule an order for the next 7 days inside your opening hours, and add special instructions per item and per order. Staff and riders see both, so nothing gets lost between the phone and the kitchen.",
+  },
+  {
+    q: "How does Branvelo help me sell more per order?",
+    a: "Three ways, none of which need configuring. Deals with SAVE % badges put your best value first. A Most ordered section is built from your real orders. And the cart suggests what goes together, learned from what your customers actually buy together. Fries with burgers, drinks with deals.",
   },
   {
     q: "Is there a contract or lock-in?",
@@ -214,7 +288,26 @@ export default function PlatformHome() {
             <p className="mt-5 max-w-lg text-[18px] font-semibold leading-relaxed text-[#4A4570]">
               Marketplaces take up to 30% of every order. Branvelo is one
               flat monthly fee, and every rupee of every order stays yours.
+              Plus the things marketplaces never give you: tax handled per
+              your country's rules, every branch on one site, your own
+              riders managed, and a cart that sells more on its own.
             </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                "GST handled for Pakistan",
+                "Multi-branch pickup",
+                "Rider management",
+                "Smart upsells that learn",
+                "Scheduled orders",
+              ].map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full bg-white px-3 py-1.5 text-[12px] font-extrabold text-[#2C24A3] ring-1 ring-[#DDD9FA]"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
                 href="/platform/signup"
@@ -262,6 +355,61 @@ export default function PlatformHome() {
         </div>
       </section>
 
+      {/* NEW THIS SEASON */}
+      <section className="relative overflow-hidden bg-white py-16 lg:py-20">
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeading
+            kicker="New in Branvelo"
+            title="Built for restaurants that want more than a menu page"
+            sub="The latest release turns your site from an order form into a selling machine."
+          />
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            <div className="rounded-3xl bg-[#F7F6FF] p-7 ring-1 ring-[#E7E4FA]">
+              <p className="text-[13px] font-black uppercase tracking-[0.14em] text-[#3B34C4]">
+                Sell more per order
+              </p>
+              <h3 className="mt-2 text-xl font-black text-[#17143A]">
+                Deals, upsells, and proof that moves people
+              </h3>
+              <p className="mt-2 text-[15px] font-medium leading-relaxed text-[#4A4570]">
+                Bundle items into deals with SAVE % badges. Show what your
+                customers actually order most. And let the cart suggest what
+                goes together, learned from your own orders. When customers
+                buy burgers with fries, the cart knows.
+              </p>
+            </div>
+            <div className="rounded-3xl bg-[#F7F6FF] p-7 ring-1 ring-[#E7E4FA]">
+              <p className="text-[13px] font-black uppercase tracking-[0.14em] text-[#3B34C4]">
+                Tax, handled
+              </p>
+              <h3 className="mt-2 text-xl font-black text-[#17143A]">
+                Pakistan's GST split, built in
+              </h3>
+              <p className="mt-2 text-[15px] font-medium leading-relaxed text-[#4A4570]">
+                16% on cash, 8% on digital payments in Punjab. 15% and 8%
+                in Sindh. Shown as its own line at checkout, never buried
+                in your prices. Other countries get their VAT and GST
+                defaults, and every rate is overridable in Settings.
+              </p>
+            </div>
+            <div className="rounded-3xl bg-[#F7F6FF] p-7 ring-1 ring-[#E7E4FA]">
+              <p className="text-[13px] font-black uppercase tracking-[0.14em] text-[#3B34C4]">
+                Every branch, every rider
+              </p>
+              <h3 className="mt-2 text-xl font-black text-[#17143A]">
+                Run the whole operation from one dashboard
+              </h3>
+              <p className="mt-2 text-[15px] font-medium leading-relaxed text-[#4A4570]">
+                List all your outlets for pickup on one site, with
+                directions for each. Create staff accounts, assign riders
+                from the Orders board, and let riders run their own
+                deliveries with cash collection totals.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CALCULATOR */}
       <section id="calculator" className="relative overflow-hidden bg-[#F7F6FF] py-16 lg:py-24">
         <DotGrid className="left-[-50px] top-[20px] h-[240px] w-[340px]" opacity={0.08} />
@@ -295,22 +443,10 @@ export default function PlatformHome() {
                 className="group rounded-3xl border border-[#E7E4FA] bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[#C9C3F5] hover:shadow-xl hover:shadow-[#2C24A3]/10"
               >
                 <div className="flex items-start justify-between">
-                  <span
-                    className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
-                      p.live
-                        ? "bg-[#EFEDFF] text-[#2C24A3]"
-                        : "bg-[#FFF3DA] text-[#B97E00]"
-                    }`}
-                  >
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EFEDFF] text-[#2C24A3]">
                     {p.icon}
                   </span>
-                  <span
-                    className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wide ${
-                      p.live
-                        ? "bg-[#E9F9EE] text-[#15803D]"
-                        : "bg-[#FFF4DE] text-[#9A6A00]"
-                    }`}
-                  >
+                  <span className="rounded-full bg-[#E9F9EE] px-3 py-1 text-[11px] font-black uppercase tracking-wide text-[#15803D]">
                     {p.status}
                   </span>
                 </div>
@@ -321,6 +457,69 @@ export default function PlatformHome() {
               </div>
             ))}
           </div>
+
+          <p className="mt-12 text-center text-[13px] font-black uppercase tracking-[0.14em] text-[#6B6794]">
+            On the way, labelled honestly
+          </p>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            {ON_THE_WAY.map((p) => (
+              <div
+                key={p.name}
+                className="flex gap-4 rounded-3xl border border-dashed border-[#D8D2F5] bg-[#FFFCF2] p-6"
+              >
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#FFF3DA] text-[#B97E00]">
+                  {p.icon}
+                </span>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg font-black text-[#17143A]">{p.name}</h3>
+                    <span className="rounded-full bg-[#FFF4DE] px-3 py-1 text-[11px] font-black uppercase tracking-wide text-[#9A6A00]">
+                      {p.status}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-[15px] font-medium leading-relaxed text-[#4A4570]">
+                    {p.body}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* COMPARISON */}
+      <section className="relative overflow-hidden bg-[#F7F6FF] py-16 lg:py-24">
+        <div className="relative mx-auto max-w-4xl px-4 sm:px-6">
+          <SectionHeading
+            kicker="The honest comparison"
+            title="Branvelo vs marketplaces, side by side"
+            sub="The marketplace is great for discovery. It is a bad landlord for your regulars."
+          />
+          <div className="mt-10 overflow-hidden rounded-3xl border border-[#E7E4FA] bg-white shadow-sm">
+            <div className="grid grid-cols-[1.2fr_1fr_1fr] gap-px bg-[#E7E4FA] text-[14px] font-extrabold sm:text-[15px]">
+              <div className="bg-white px-4 py-3.5 text-[#17143A]"></div>
+              <div className="bg-[#2C24A3] px-4 py-3.5 text-white">Branvelo</div>
+              <div className="bg-white px-4 py-3.5 text-[#4A4570]">Marketplaces</div>
+              {[
+                ["Commission per order", "0%, forever", "Up to 30%"],
+                ["Your customer data", "Yours, exportable", "The marketplace keeps it"],
+                ["Your brand on the page", "Your site, your colors", "Their page, your listing"],
+                ["Deals and smart upsells", "Your deals, your rules", "Their promotions, their terms"],
+                ["Tax handling", "Built in, per country", "You figure it out"],
+                ["Branches and riders", "Built in", "Not included"],
+                ["Contract", "None, monthly", "Varies"],
+              ].map(([label, ours, theirs]) => (
+                <div key={label} className="contents">
+                  <div className="bg-white px-4 py-3.5 font-bold text-[#17143A]">{label}</div>
+                  <div className="bg-[#F7F6FF] px-4 py-3.5 font-bold text-[#2C24A3]">{ours}</div>
+                  <div className="bg-white px-4 py-3.5 font-medium text-[#4A4570]">{theirs}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="mt-4 text-center text-sm font-bold text-[#6B6794]">
+            Keep your marketplace listings for discovery. Move your regulars home.
+          </p>
         </div>
       </section>
 
@@ -344,12 +543,12 @@ export default function PlatformHome() {
               {
                 n: "2",
                 t: "Add your menu",
-                b: "Items, photos, prices, zones, hours, coupons. Editable any time, live in seconds.",
+                b: "Items, photos, prices, deals, zones, branches, tax, hours. Import from a sheet or from photos. Editable any time, live in seconds.",
               },
               {
                 n: "3",
                 t: "Share your link, keep your money",
-                b: "Orders land in your dashboard. Customers track them live. The full amount is yours.",
+                b: "Orders land in your dashboard, riders get assigned, customers track live and can even schedule ahead. The full amount is yours.",
               },
             ].map((step) => (
               <div key={step.n} className="rounded-3xl bg-white/5 p-7">
@@ -429,9 +628,10 @@ export default function PlatformHome() {
             <ul className="mt-7 space-y-3 text-[15px] font-bold text-[#4A4570]">
               {[
                 "Your own ordering website and subdomain",
-                "Admin dashboard with live orders",
-                "Menu, zones, coupons and hours in your control",
-                "Live customer order tracking",
+                "Admin dashboard with live orders, team and riders",
+                "Menu, deals, zones, branches and coupons in your control",
+                "Tax handled per your country's rules",
+                "Smart upsells, scheduled orders and live tracking",
                 "Your customer data, exportable any time",
                 "No commission, no setup fee, no contract",
               ].map((f) => (
