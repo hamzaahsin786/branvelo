@@ -131,6 +131,7 @@ interface StorefrontData {
   zones: Zone[];
   branches: Branch[];
   popular_items: PopularItem[];
+  bought_together: Record<string, { id: number; count: number }[]>;
 }
 
 interface CartOption {
@@ -1171,14 +1172,35 @@ export function Storefront() {
           upsells={(() => {
             const inCart = new Set(cart.map((l) => l.item_id));
             const all = categories.flatMap((c) => c.items);
-            const ranked = all.filter((i) => !inCart.has(i.id));
+            const byId = new Map(all.map((i) => [i.id, i]));
+            // Ranked by real buying behaviour: for every item in the
+            // cart, add the co-occurrence counts of its bought-together
+            // partners (orders where both items appear). A candidate
+            // that pairs with several cart items scores the sum.
+            const scores = new Map<number, number>();
+            for (const line of cart) {
+              if (!line.item_id) continue;
+              for (const partner of data.bought_together?.[String(line.item_id)] ?? []) {
+                if (inCart.has(partner.id)) continue;
+                scores.set(partner.id, (scores.get(partner.id) ?? 0) + partner.count);
+              }
+            }
+            const scored = [...scores.entries()]
+              .sort((a, b) => b[1] - a[1])
+              .map(([id]) => byId.get(id))
+              .filter((i): i is Item => !!i);
+            // Cold start / fill-up only: when there is no order history
+            // yet (or fewer than 6 scored items), badges first, then
+            // the rest of the menu, so the rail is never empty.
+            const chosen = new Set(scored.map((i) => i.id));
+            const ranked = all.filter((i) => !inCart.has(i.id) && !chosen.has(i.id));
             const badged = ranked.filter(
               (i) => i.badges.includes("bestseller") || i.badges.includes("popular"),
             );
             const rest = ranked.filter(
               (i) => !i.badges.includes("bestseller") && !i.badges.includes("popular"),
             );
-            return [...badged, ...rest].slice(0, 6).map((i) => ({
+            return [...scored, ...badged, ...rest].slice(0, 6).map((i) => ({
               id: i.id,
               name: i.name,
               price: i.price,

@@ -368,10 +368,35 @@ class StorefrontView(APIView):
                 Order.Status.DISPATCHED, Order.Status.DELIVERED,
             ],
         ).values_list("items", flat=True)[:200]
-        for lines in recent:
+        recent_items = list(recent)
+        for lines in recent_items:
             for line in lines or []:
                 if line.get("item_id") is not None:
                     counts[line["item_id"]] += line.get("qty", 1)
+        # Bought-together map: for each item, the items most often
+        # ordered in the SAME order as it. One vote per order per pair
+        # (quantities ignored, so a bulk order cannot skew it), and
+        # cancelled orders are excluded by the status filter above.
+        # This is what the cart's "Frequently bought with this" rail
+        # ranks by - real buying behaviour, not staff-set badges.
+        pairs: dict[int, Counter] = {}
+        for lines in recent_items:
+            ids = {
+                line["item_id"]
+                for line in (lines or [])
+                if line.get("item_id") is not None
+            }
+            for i in ids:
+                for j in ids:
+                    if i != j:
+                        pairs.setdefault(i, Counter())[j] += 1
+        bought_together = {
+            str(item_id): [
+                {"id": partner, "count": c}
+                for partner, c in pairs_counter.most_common(4)
+            ]
+            for item_id, pairs_counter in pairs.items()
+        }
         popular_items = []
         if counts:
             top = MenuItem.objects.filter(
@@ -434,5 +459,6 @@ class StorefrontView(APIView):
                 "zones": zones,
                 "branches": branches,
                 "popular_items": popular_items,
+                "bought_together": bought_together,
             }
         )
