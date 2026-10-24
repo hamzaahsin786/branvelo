@@ -178,6 +178,20 @@ const PRODUCTS = [
     ),
   },
   {
+    name: "Reports and insights",
+    status: "Available now",
+    live: true,
+    body: "Your orders, sales and best sellers at a glance. See what is working, and decide what to promote next.",
+    icon: (
+      <Icon>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M8 17v-4" />
+        <path d="M12 17V8" />
+        <path d="M16 17v-7" />
+      </Icon>
+    ),
+  },
+  {
     name: "Your customer data",
     status: "Available now",
     live: true,
@@ -276,7 +290,7 @@ export default function PlatformHome() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-[#DDD9FA] bg-white px-3.5 py-1.5 text-[13px] font-extrabold text-[#2C24A3]">
               <span className="h-2 w-2 rounded-full bg-[#F59E0B]" />
-              Online ordering for restaurants in Pakistan
+              Online ordering for restaurants, cafes and bakeries in Pakistan
             </p>
             <h1 className="mt-5 text-[42px] font-black leading-[1.05] tracking-tight text-[#17143A] sm:text-[56px]">
               Your restaurant.
