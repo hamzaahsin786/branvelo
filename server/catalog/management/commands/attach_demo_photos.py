@@ -1,6 +1,6 @@
 """Attach the bundled sample dish photos to one tenant's menu.
 
-Purpose: visual checking only. The 22 sample photos ship in the repo at
+Purpose: visual checking only. The 25 sample photos ship in the repo at
 apps/web/public/menu/ (served by the web app at /menu/<file>.jpg), and
 this command points a tenant's menu items, category banners and cover
 photo at them by matching item and category names. It only fills empty
@@ -52,6 +52,12 @@ ITEM_RULES = [
     ("wings", "hot-wings.jpg"),
     ("water bottle", "water-bottle.jpg"),
     ("bottle", "water-bottle.jpg"),
+    ("extra cheese", "extra-cheese.jpg"),
+    ("mayo", "mayo-dip.jpg"),
+    ("jelopino", "jalapeno-sauce.jpg"),
+    ("jalapeno", "jalapeno-sauce.jpg"),
+    ("sauce", "mayo-dip.jpg"),
+    ("cheese", "extra-cheese.jpg"),
     ("burger", "beef-burger.jpg"),
 ]
 
