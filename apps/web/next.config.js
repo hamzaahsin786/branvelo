@@ -38,6 +38,28 @@ const apiConnectSrc = (() => {
   return apiOrigin;
 })();
 
+// Uploaded photos (logo, cover, menu items) are served by the API from
+// its media folder, and the upload endpoint returns absolute http URLs
+// on the API host (usama-burgers.localhost:8000 in dev). img-src only
+// allowed 'self' + https:, so in local dev every uploaded photo was
+// blocked by the browser even though the file served fine - the same
+// per-host trap as connect-src, one directive over. Dev-only loosening:
+// allow the API's http origins for images. Production serves media over
+// https (covered by https:) or same-origin, so it needs nothing extra.
+const apiImgSrc = (() => {
+  if (!isDev) return "";
+  try {
+    const url = new URL(apiOrigin);
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+      const port = url.port || "8000";
+      return ` http://localhost:${port} http://*.localhost:${port}`;
+    }
+  } catch {
+    /* fall through to no extra image origins */
+  }
+  return "";
+})();
+
 // Supabase is used for Auth + Realtime + Storage.
 const supabaseHosts = "https://*.supabase.co wss://*.supabase.co";
 
@@ -54,8 +76,9 @@ const contentSecurityPolicy = [
   // never eval, so production stays strict.
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  // Menu photos come from Supabase Storage (https); data: for tiny inlined assets.
-  "img-src 'self' data: https:",
+  // Menu photos come from Supabase Storage (https); uploaded photos come
+  // from the API media host (see apiImgSrc); data: for tiny inlined assets.
+  `img-src 'self' data: https:${apiImgSrc}`,
   // API calls + Supabase Auth/Realtime/Storage + geo-IP lookups.
   `connect-src 'self' ${apiConnectSrc} ${supabaseHosts} ${geoHosts}`,
   "font-src 'self' data:",
