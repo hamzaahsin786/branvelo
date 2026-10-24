@@ -23,7 +23,8 @@
     "dev": "next dev",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "prebuild": "node scripts/fix-menu-photos.mjs"
+    "prebuild": "node scripts/fix-menu-photos.mjs",
+    "predev": "node scripts/fix-menu-photos.mjs"
   },
   "version": "0.1.0"
 }
