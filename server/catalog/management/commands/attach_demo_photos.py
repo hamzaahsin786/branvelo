@@ -3,9 +3,11 @@
 Purpose: visual checking only. The 25 sample photos ship in the repo at
 apps/web/public/menu/ (served by the web app at /menu/<file>.jpg), and
 this command points a tenant's menu items, category banners and cover
-photo at them by matching item and category names. It only fills empty
-photo fields unless --force is given, and --clear removes the sample
-photos again (any photo_url starting with /menu/).
+photo at them by matching item and category names. It also seeds the
+banner carousel slides (cover_photos) and, when the tenant has no deals
+yet, one demo deal so the storefront Deals section renders. It only
+fills empty photo fields unless --force is given, and --clear removes
+the sample photos again (any photo_url starting with /menu/).
 
 Run inside the api container:
     python manage.py attach_demo_photos usama-burgers
@@ -15,10 +17,25 @@ Run inside the api container:
 from django.core.management.base import BaseCommand, CommandError
 from django_tenants.utils import get_tenant_model, schema_context
 
-from catalog.models import Category, MenuItem, RestaurantProfile
+from catalog.models import Category, Deal, MenuItem, RestaurantProfile
 
 PHOTO_PREFIX = "/menu/"
 COVER_PHOTO = "/menu/shawarma-platter.jpg"
+# Extra banner slides seeded alongside the cover so the storefront hero
+# carousel has something to rotate (all files from the bundled set).
+COVER_SLIDES = [
+    COVER_PHOTO,
+    "/menu/zinger-burger.jpg",
+    "/menu/chicken-shawarma.jpg",
+    "/menu/loaded-fries.jpg",
+]
+DEMO_DEAL = {
+    "title": "Usama Special Deal",
+    "contents": "Zinger Burger\nChicken Shawarma\nLoaded Fries",
+    "price_pkr": 999,
+    "compare_at_pkr": 1299,
+    "photo_url": "/menu/zinger-burger.jpg",
+}
 
 # Ordered: the first rule whose keyword appears in the item name wins,
 # so specific dishes come before generic ones.
@@ -128,9 +145,22 @@ class Command(BaseCommand):
                 cover = RestaurantProfile.objects.filter(
                     cover_url__startswith=PHOTO_PREFIX
                 ).update(cover_url="")
+                profile = RestaurantProfile.objects.first()
+                if profile and profile.cover_photos:
+                    kept = [
+                        s for s in profile.cover_photos
+                        if not s.startswith(PHOTO_PREFIX)
+                    ]
+                    profile.cover_photos = kept
+                    profile.save(update_fields=["cover_photos", "updated_at"])
+                deals = Deal.objects.filter(
+                    title=DEMO_DEAL["title"],
+                    photo_url__startswith=PHOTO_PREFIX,
+                ).delete()[0]
                 self.stdout.write(
                     f"Cleared sample photos: {items} items, "
-                    f"{cats} categories, cover cleared: {bool(cover)}"
+                    f"{cats} categories, cover cleared: {bool(cover)}, "
+                    f"demo deals removed: {deals}"
                 )
                 return
 
@@ -166,6 +196,37 @@ class Command(BaseCommand):
                     profile.save(update_fields=["cover_url", "updated_at"])
                 cover_set = True
 
+            slides_set = 0
+            deal_created = False
+            if profile:
+                existing = [
+                    s for s in (profile.cover_photos or [])
+                    if isinstance(s, str) and s.strip()
+                ]
+                if force:
+                    keep = [
+                        s for s in existing
+                        if not s.startswith(PHOTO_PREFIX)
+                    ]
+                    slides = list(dict.fromkeys(keep + COVER_SLIDES))
+                elif not existing:
+                    first = [profile.cover_url] if profile.cover_url else []
+                    slides = list(dict.fromkeys(first + COVER_SLIDES))
+                else:
+                    slides = existing
+                if slides != existing:
+                    profile.cover_photos = slides
+                    profile.cover_url = slides[0] if slides else ""
+                    profile.save(
+                        update_fields=[
+                            "cover_photos", "cover_url", "updated_at",
+                        ]
+                    )
+                slides_set = len(profile.cover_photos or [])
+                if not Deal.objects.exists():
+                    Deal.objects.create(**DEMO_DEAL)
+                    deal_created = True
+
         self.stdout.write(
             f"Items: {updated} updated, {skipped} already had a photo, "
             f"{len(unmatched)} unmatched"
@@ -174,3 +235,5 @@ class Command(BaseCommand):
             self.stdout.write("Unmatched items: " + ", ".join(unmatched))
         self.stdout.write(f"Categories: {cat_updated} updated")
         self.stdout.write(f"Cover photo set: {cover_set} ({COVER_PHOTO})")
+        self.stdout.write(f"Cover slides: {slides_set} total")
+        self.stdout.write(f"Demo deal created: {deal_created}")

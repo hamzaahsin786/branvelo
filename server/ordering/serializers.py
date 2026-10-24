@@ -41,11 +41,24 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 
 
 class OrderLineInput(serializers.Serializer):
-    item_id = serializers.IntegerField()
+    # Exactly one of item_id / deal_id: a line is either a menu item
+    # (priced from the live menu, modifiers allowed) or a deal (priced
+    # from the Deal row, contents snapshotted, no modifiers).
+    item_id = serializers.IntegerField(required=False, allow_null=True)
+    deal_id = serializers.IntegerField(required=False, allow_null=True)
     qty = serializers.IntegerField(min_value=1, max_value=50)
     modifier_option_ids = serializers.ListField(
         child=serializers.IntegerField(), required=False, default=list
     )
+
+    def validate(self, attrs):
+        has_item = attrs.get("item_id") is not None
+        has_deal = attrs.get("deal_id") is not None
+        if has_item == has_deal:
+            raise serializers.ValidationError(
+                "Each line needs exactly one of item_id or deal_id."
+            )
+        return attrs
 
 
 class PlaceOrderSerializer(serializers.Serializer):

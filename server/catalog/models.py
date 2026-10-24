@@ -17,6 +17,7 @@ DEFAULT_THEME = {
     "sections": {
         "announcement": True,
         "featured": True,
+        "deals": True,
         "about": True,
         "whatsapp": True,
         "location_gate": True,
@@ -34,6 +35,11 @@ class RestaurantProfile(models.Model):
     cover_url = models.URLField(
         blank=True,
         help_text="Wide banner photo for the storefront hero (optional).",
+    )
+    cover_photos = models.JSONField(
+        default=list, blank=True,
+        help_text="Banner slides for the storefront hero carousel. "
+        "cover_url mirrors the first slide for older readers.",
     )
     phone = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
@@ -219,3 +225,38 @@ class Coupon(models.Model):
 
     def __str__(self):
         return self.code
+
+
+class Deal(models.Model):
+    """A priced bundle (2 zingers + fries + drinks for a flat price).
+
+    Deals are managed in the admin Deals page and rendered as their own
+    storefront section. Ordering a deal prices it server-side from this
+    row (never from the client) and snapshots title + contents onto the
+    order line, so later edits never rewrite a placed order.
+    """
+
+    title = models.CharField(max_length=120)
+    description = models.TextField(blank=True)
+    contents = models.TextField(
+        blank=True,
+        help_text="What is included, one line per item (shown on the card).",
+    )
+    price_pkr = models.IntegerField(default=0, help_text="Whole rupees.")
+    compare_at_pkr = models.IntegerField(
+        null=True, blank=True,
+        help_text="Total if bought separately; shown struck through when "
+        "higher than price_pkr.",
+    )
+    photo_url = models.URLField(blank=True)
+    is_active = models.BooleanField(default=True)
+    sort = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "deals"
+        ordering = ["sort", "id"]
+
+    def __str__(self):
+        return f"{self.title} (Rs {self.price_pkr})"

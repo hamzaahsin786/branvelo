@@ -21,6 +21,7 @@ interface Theme {
   sections: {
     announcement: boolean;
     featured: boolean;
+    deals?: boolean;
     about: boolean;
     whatsapp?: boolean;
     location_gate?: boolean;
@@ -50,6 +51,17 @@ interface Item {
   badges: string[];
   modifier_groups: ModifierGroup[];
 }
+interface Deal {
+  id: number;
+  title: string;
+  description: string;
+  contents: string;
+  price_pkr: number;
+  compare_at_pkr: number | null;
+  photo_url: string;
+  is_active: boolean;
+  sort: number;
+}
 interface Category {
   id: number;
   name: string;
@@ -78,6 +90,7 @@ interface StorefrontData {
     name: string;
     logo_url: string;
     cover_url: string;
+    cover_photos: string[];
     phone: string;
     address: string;
     city: string;
@@ -87,6 +100,7 @@ interface StorefrontData {
   };
   hours: { weekday: number; open: string | null; close: string | null; is_closed: boolean }[];
   categories: Category[];
+  deals: Deal[];
   zones: Zone[];
 }
 
@@ -99,6 +113,7 @@ interface CartOption {
 interface CartLine {
   key: string;
   item_id: number;
+  deal_id: number | null;
   name: string;
   unit_price: number;
   qty: number;
@@ -235,6 +250,24 @@ export function Storefront() {
     ? `Search "${dishNames[dishIdx]}"...`
     : "Search the menu...";
 
+  // Cover carousel: rotate the banner slides every few seconds; a
+  // single photo stays static and shows no controls.
+  const [slideIdx, setSlideIdx] = useState(0);
+  const [slidePaused, setSlidePaused] = useState(false);
+  const slideCount = useMemo(() => {
+    if (!data) return 0;
+    const list = data.profile.cover_photos ?? [];
+    return list.length > 0 ? list.length : data.profile.cover_url ? 1 : 0;
+  }, [data]);
+  useEffect(() => {
+    if (slideCount < 2 || slidePaused) return;
+    const t = setInterval(
+      () => setSlideIdx((i) => (i + 1) % slideCount),
+      5200,
+    );
+    return () => clearInterval(t);
+  }, [slideCount, slidePaused]);
+
   const visibleCategories = useMemo(() => {
     if (!data) return [];
     const q = query.trim().toLowerCase();
@@ -298,9 +331,31 @@ export function Storefront() {
       if (existing) {
         return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + qty } : l));
       }
-      return [...prev, { key, item_id: item.id, name: item.name, unit_price: unit, qty, options }];
+      return [...prev, { key, item_id: item.id, deal_id: null, name: item.name, unit_price: unit, qty, options }];
     });
     setSheetItem(null);
+  };
+
+  const addDeal = (deal: Deal) => {
+    const key = `deal:${deal.id}`;
+    setCart((prev) => {
+      const existing = prev.find((l) => l.key === key);
+      if (existing) {
+        return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l));
+      }
+      return [
+        ...prev,
+        {
+          key,
+          item_id: 0,
+          deal_id: deal.id,
+          name: deal.title,
+          unit_price: deal.price_pkr,
+          qty: 1,
+          options: [],
+        },
+      ];
+    });
   };
 
   const startAdd = (item: Item) => {
@@ -372,6 +427,14 @@ export function Storefront() {
   const { profile, hours, categories, zones } = data;
   const theme = profile.theme;
   const primary = theme.primary || "#2C24A3";
+  const slides =
+    profile.cover_photos && profile.cover_photos.length > 0
+      ? profile.cover_photos
+      : profile.cover_url
+        ? [profile.cover_url]
+        : [];
+  const activeSlide = slides.length ? slideIdx % slides.length : 0;
+  const deals = data.deals ?? [];
   const today = (new Date().getDay() + 6) % 7;
   const todayHours = hours.find((h) => h.weekday === today);
 
@@ -441,19 +504,62 @@ export function Storefront() {
       </header>
 
       <div className="mx-auto max-w-4xl px-4">
-        <div className="relative mt-4 h-56 overflow-hidden rounded-[28px] sm:h-72" style={{ backgroundColor: primary }}>
-          {profile.cover_url && (
+        <div
+          className="relative mt-4 h-56 overflow-hidden rounded-[28px] sm:h-72"
+          style={{ backgroundColor: primary }}
+          onMouseEnter={() => setSlidePaused(true)}
+          onMouseLeave={() => setSlidePaused(false)}
+        >
+          {slides.map((src, i) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          )}
+            <img
+              key={`${src}-${i}`}
+              src={src}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
+              style={{ opacity: i === activeSlide ? 1 : 0 }}
+            />
+          ))}
           <div
             className="absolute inset-0"
             style={{
-              background: profile.cover_url
+              background: slides.length
                 ? "linear-gradient(to top, rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0.12) 100%)"
                 : `linear-gradient(120deg, ${primary} 0%, color-mix(in srgb, ${primary} 52%, #0B0930) 100%)`,
             }}
           />
+          {slides.length > 1 && (
+            <>
+              <div className="absolute right-4 top-4 z-10 flex gap-1.5">
+                {slides.map((_, i) => (
+                  <button
+                    key={i}
+                    aria-label={`Cover photo ${i + 1}`}
+                    onClick={() => setSlideIdx(i)}
+                    className={`h-1.5 rounded-full transition-all ${i === activeSlide ? "w-6 bg-white" : "w-2.5 bg-white/45"}`}
+                  />
+                ))}
+              </div>
+              <button
+                aria-label="Previous cover photo"
+                onClick={() => setSlideIdx((activeSlide - 1 + slides.length) % slides.length)}
+                className="absolute left-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="h-4 w-4" aria-hidden>
+                  <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                aria-label="Next cover photo"
+                onClick={() => setSlideIdx((activeSlide + 1) % slides.length)}
+                className="absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="h-4 w-4" aria-hidden>
+                  <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </>
+          )}
           <div className="absolute inset-x-0 bottom-0 p-5">
             <h1 className="text-3xl font-black text-white drop-shadow-sm sm:text-4xl">{profile.name}</h1>
             <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -567,6 +673,86 @@ export function Storefront() {
           <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
             This restaurant is not taking orders right now. You can still browse the menu.
           </p>
+        )}
+
+        {theme.sections.deals !== false && !query && deals.length > 0 && (
+          <section className="mt-6">
+            <h2 className="text-lg font-black">Deals</h2>
+            <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
+              {deals.map((deal) => {
+                const saving =
+                  deal.compare_at_pkr && deal.compare_at_pkr > deal.price_pkr
+                    ? Math.round(
+                        (1 - deal.price_pkr / deal.compare_at_pkr) * 100,
+                      )
+                    : 0;
+                const contents = (deal.contents || "")
+                  .split("\n")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                return (
+                  <div key={deal.id} className="flex w-64 shrink-0 flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.05)] ring-1 ring-black/5">
+                    <div className="relative">
+                      {deal.photo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={deal.photo_url} alt="" className="aspect-[16/10] w-full object-cover" />
+                      ) : (
+                        <div
+                          className="flex aspect-[16/10] w-full items-center justify-center text-4xl font-black text-white"
+                          style={{
+                            background: `linear-gradient(120deg, ${primary} 0%, color-mix(in srgb, ${primary} 52%, #0B0930) 100%)`,
+                          }}
+                        >
+                          {deal.title.charAt(0)}
+                        </div>
+                      )}
+                      {saving > 0 && (
+                        <span className="absolute left-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-black text-white">
+                          SAVE {saving}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col p-3.5">
+                      <p className="text-sm font-extrabold">{deal.title}</p>
+                      {deal.description && (
+                        <p className="mt-0.5 line-clamp-2 text-[12px] font-semibold text-neutral-500">
+                          {deal.description}
+                        </p>
+                      )}
+                      {contents.length > 0 && (
+                        <ul className="mt-2 space-y-1">
+                          {contents.slice(0, 4).map((line, i) => (
+                            <li key={i} className="flex items-center gap-1.5 text-[12px] font-semibold text-neutral-500">
+                              <span className="h-1 w-1 shrink-0 rounded-full" style={{ backgroundColor: primary }} />
+                              {line}
+                            </li>
+                          ))}
+                          {contents.length > 4 && (
+                            <li className="text-[12px] font-semibold text-neutral-400">
+                              + {contents.length - 4} more
+                            </li>
+                          )}
+                        </ul>
+                      )}
+                      <div className="mt-auto flex items-center justify-between pt-3">
+                        <p className="flex items-baseline gap-1.5">
+                          <span className="text-[15px] font-black" style={{ color: primary }}>
+                            {formatRs(deal.price_pkr)}
+                          </span>
+                          {deal.compare_at_pkr != null && deal.compare_at_pkr > deal.price_pkr && (
+                            <span className="text-[12px] font-bold text-neutral-400 line-through">
+                              {formatRs(deal.compare_at_pkr)}
+                            </span>
+                          )}
+                        </p>
+                        <AddButton primary={primary} disabled={!profile.is_open} onClick={() => addDeal(deal)} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         {theme.sections.featured && !query && featured.length > 0 && (
@@ -1320,11 +1506,15 @@ function CheckoutPanel({
           customer_address: type === "delivery" ? address.trim() : "",
           type,
           zone_id: type === "delivery" ? zoneId : null,
-          items: cart.map((l) => ({
-            item_id: l.item_id,
-            qty: l.qty,
-            modifier_option_ids: l.options.map((o) => o.id),
-          })),
+          items: cart.map((l) =>
+            l.deal_id
+              ? { deal_id: l.deal_id, qty: l.qty }
+              : {
+                  item_id: l.item_id,
+                  qty: l.qty,
+                  modifier_option_ids: l.options.map((o) => o.id),
+                },
+          ),
           coupon_code: coupon.trim(),
           payment_method: payment,
         }),
@@ -1382,6 +1572,11 @@ function CheckoutPanel({
                 <div key={line.key} className="flex items-center gap-3 rounded-2xl bg-neutral-50 px-3 py-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-extrabold">{line.name}</p>
+                    {line.deal_id != null && (
+                      <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: primary }}>
+                        Deal
+                      </p>
+                    )}
                     {line.options.length > 0 && (
                       <p className="truncate text-[12px] font-semibold text-neutral-400">
                         {line.options.map((o) => o.name).join(", ")}

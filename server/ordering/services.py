@@ -11,7 +11,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
-from catalog.models import Coupon, DeliveryZone, MenuItem, ModifierOption
+from catalog.models import Coupon, Deal, DeliveryZone, MenuItem, ModifierOption
 from ordering.events import publish_order_event
 from ordering.models import (
     Customer,
@@ -39,6 +39,27 @@ def _price_lines(raw_items):
     lines = []
     subtotal = 0
     for raw in raw_items:
+        if raw.get("deal_id") is not None:
+            # Deal line: priced from the Deal row, contents snapshotted
+            # so later deal edits never change a placed order.
+            try:
+                deal = Deal.objects.get(pk=raw["deal_id"], is_active=True)
+            except Deal.DoesNotExist:
+                raise CheckoutError("One of the deals is no longer available.")
+            qty = raw["qty"]
+            lines.append(
+                {
+                    "deal_id": deal.id,
+                    "name": deal.title,
+                    "contents": deal.contents,
+                    "qty": qty,
+                    "unit_price_pkr": deal.price_pkr,
+                    "line_total_pkr": deal.price_pkr * qty,
+                    "modifiers": [],
+                }
+            )
+            subtotal += deal.price_pkr * qty
+            continue
         try:
             item = MenuItem.objects.select_related("category").get(
                 pk=raw["item_id"], is_available=True

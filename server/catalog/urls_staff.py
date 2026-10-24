@@ -10,6 +10,7 @@ from catalog.imports import (
 from catalog.views import (
     CategoryViewSet,
     CouponViewSet,
+    DealViewSet,
     DeliveryZoneViewSet,
     MenuItemViewSet,
     ModifierGroupViewSet,
@@ -25,6 +26,7 @@ router.register("modifier-groups", ModifierGroupViewSet)
 router.register("modifier-options", ModifierOptionViewSet)
 router.register("zones", DeliveryZoneViewSet)
 router.register("coupons", CouponViewSet)
+router.register("deals", DealViewSet)
 
 urlpatterns = [
     path("upload-photo", PhotoUploadView.as_view()),

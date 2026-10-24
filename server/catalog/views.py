@@ -22,6 +22,7 @@ from accounts.permissions import IsStaffWriter
 from catalog.models import (
     Category,
     Coupon,
+    Deal,
     DeliveryZone,
     MenuItem,
     ModifierGroup,
@@ -32,6 +33,7 @@ from catalog.models import (
 from catalog.serializers import (
     CategorySerializer,
     CouponSerializer,
+    DealSerializer,
     DeliveryZoneSerializer,
     MenuItemSerializer,
     ModifierGroupSerializer,
@@ -85,6 +87,11 @@ class CouponViewSet(_StaffViewSet):
     serializer_class = CouponSerializer
 
 
+class DealViewSet(_StaffViewSet):
+    queryset = Deal.objects.all()
+    serializer_class = DealSerializer
+
+
 _ALLOWED_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 _MAX_PHOTO_BYTES = 5 * 1024 * 1024
 
@@ -121,6 +128,33 @@ class PhotoUploadView(APIView):
         return Response({"url": url}, status=status.HTTP_201_CREATED)
 
 
+def _cover_slides(profile):
+    """Effective banner slides: the saved list, or the single legacy
+    cover_url when no list was ever saved."""
+    slides = [
+        s.strip()
+        for s in (profile.cover_photos or [])
+        if isinstance(s, str) and s.strip()
+    ]
+    if not slides and profile.cover_url:
+        slides = [profile.cover_url]
+    return slides
+
+
+def _clean_cover_photos(raw):
+    """Validate an incoming slides list: strings only, trimmed, capped."""
+    cleaned = []
+    for entry in raw:
+        if not isinstance(entry, str):
+            continue
+        value = entry.strip()[:500]
+        if value and value not in cleaned:
+            cleaned.append(value)
+        if len(cleaned) >= 6:
+            break
+    return cleaned
+
+
 class StaffProfileView(APIView):
     """GET/PATCH /api/staff/catalog/profile - the settings page's data:
     restaurant profile, opening hours and theme in one payload. The
@@ -136,6 +170,7 @@ class StaffProfileView(APIView):
             "name": profile.name,
             "logo_url": profile.logo_url,
             "cover_url": profile.cover_url,
+            "cover_photos": _cover_slides(profile),
             "phone": profile.phone,
             "address": profile.address,
             "city": profile.city,
@@ -190,6 +225,13 @@ class StaffProfileView(APIView):
                 setattr(profile, field, value[:limit] if limit else value)
         if "is_open" in data and isinstance(data["is_open"], bool):
             profile.is_open = data["is_open"]
+        if "cover_photos" in data and isinstance(data["cover_photos"], list):
+            # Runs after the plain cover_url handling above on purpose:
+            # the slides list wins, and cover_url mirrors its first slide.
+            profile.cover_photos = _clean_cover_photos(data["cover_photos"])
+            profile.cover_url = (
+                profile.cover_photos[0] if profile.cover_photos else ""
+            )
         if "theme" in data:
             from tenants_app.api import _clean_theme
 
@@ -277,6 +319,7 @@ class StorefrontView(APIView):
                     "name": profile.name,
                     "logo_url": profile.logo_url,
                     "cover_url": profile.cover_url,
+                    "cover_photos": _cover_slides(profile),
                     "phone": profile.phone,
                     "address": profile.address,
                     "city": profile.city,
@@ -286,6 +329,9 @@ class StorefrontView(APIView):
                 },
                 "hours": hours,
                 "categories": cat_payload,
+                "deals": DealSerializer(
+                    Deal.objects.filter(is_active=True), many=True
+                ).data,
                 "zones": zones,
             }
         )

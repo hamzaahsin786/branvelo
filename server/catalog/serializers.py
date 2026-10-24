@@ -10,6 +10,7 @@ from rest_framework import serializers
 from catalog.models import (
     Category,
     Coupon,
+    Deal,
     DeliveryZone,
     MenuItem,
     ModifierGroup,
@@ -17,7 +18,18 @@ from catalog.models import (
 )
 
 
+# Photo fields accept relative paths ("/menu/zinger-burger.jpg") as well
+# as absolute URLs: the bundled sample photos and any same-origin media
+# are served relative to the web app, and DRF's URLField would reject
+# them, which broke saving any record the demo-photo command had filled.
+_RELAXED_PHOTO = serializers.CharField(
+    max_length=200, required=False, allow_blank=True, default=""
+)
+
+
 class CategorySerializer(serializers.ModelSerializer):
+    banner_url = _RELAXED_PHOTO
+
     class Meta:
         model = Category
         fields = [
@@ -47,6 +59,7 @@ class ModifierGroupSerializer(serializers.ModelSerializer):
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
+    photo_url = _RELAXED_PHOTO
     category_id = serializers.PrimaryKeyRelatedField(
         source="category", queryset=Category.objects.all()
     )
@@ -72,6 +85,17 @@ class DeliveryZoneSerializer(serializers.ModelSerializer):
         fields = [
             "id", "name", "areas", "fee_pkr", "min_order_pkr",
             "free_above_pkr", "is_active",
+        ]
+
+
+class DealSerializer(serializers.ModelSerializer):
+    photo_url = _RELAXED_PHOTO
+
+    class Meta:
+        model = Deal
+        fields = [
+            "id", "title", "description", "contents", "price_pkr",
+            "compare_at_pkr", "photo_url", "is_active", "sort",
         ]
 
 

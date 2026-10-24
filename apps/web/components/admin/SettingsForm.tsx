@@ -13,6 +13,7 @@ export interface Theme {
   sections: {
     announcement: boolean;
     featured: boolean;
+    deals: boolean;
     about: boolean;
     whatsapp: boolean;
     location_gate: boolean;
@@ -30,6 +31,7 @@ export interface ProfilePayload {
   name: string;
   logo_url: string;
   cover_url: string;
+  cover_photos: string[];
   phone: string;
   address: string;
   city: string;
@@ -73,6 +75,7 @@ const DEFAULT_THEME: Theme = {
   sections: {
     announcement: true,
     featured: true,
+    deals: true,
     about: true,
     whatsapp: true,
     location_gate: true,
@@ -121,8 +124,33 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
   const [announcement, setAnnouncement] = useState(initialProfile.announcement);
   const [isOpen, setIsOpen] = useState(initialProfile.is_open);
   const [logoUrl, setLogoUrl] = useState(initialProfile.logo_url);
-  const [coverUrl, setCoverUrl] = useState(initialProfile.cover_url ?? "");
+  const [coverSlides, setCoverSlides] = useState<string[]>(
+    initialProfile.cover_photos && initialProfile.cover_photos.length > 0
+      ? [...initialProfile.cover_photos]
+      : initialProfile.cover_url
+        ? [initialProfile.cover_url]
+        : [],
+  );
+  const [coverInput, setCoverInput] = useState("");
   const [uploading, setUploading] = useState<"logo" | "cover" | null>(null);
+
+  function addCoverSlide(url: string) {
+    const value = url.trim();
+    if (!value) return;
+    setCoverSlides((prev) =>
+      prev.includes(value) || prev.length >= 6 ? prev : [...prev, value],
+    );
+  }
+
+  function moveCoverSlide(idx: number, dir: -1 | 1) {
+    setCoverSlides((prev) => {
+      const next = [...prev];
+      const target = idx + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+  }
 
   async function handleUpload(kind: "logo" | "cover", file: File | null) {
     if (!file) return;
@@ -131,7 +159,7 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
     try {
       const url = await uploadStaffPhoto(file);
       if (kind === "logo") setLogoUrl(url);
-      else setCoverUrl(url);
+      else addCoverSlide(url);
       flash("Photo uploaded. Press Save restaurant to publish it.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Photo upload failed");
@@ -194,7 +222,8 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
         announcement: announcement.trim(),
         is_open: isOpen,
         logo_url: logoUrl.trim(),
-        cover_url: coverUrl.trim(),
+        cover_url: coverSlides[0] ?? "",
+        cover_photos: coverSlides,
       },
       "Restaurant details saved.",
     );
@@ -360,15 +389,86 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
           </div>
           <div>
             <span className="text-sm font-semibold">
-              Cover photo (storefront banner)
+              Cover photos (storefront banner carousel)
             </span>
-            <div className="mt-1 flex items-center gap-2">
+            <p className="mt-0.5 text-xs text-neutral-500">
+              Add up to 6 wide food photos. They rotate on the storefront
+              banner; the first one is the main cover.
+            </p>
+            {coverSlides.length > 0 && (
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {coverSlides.map((src, i) => (
+                  <div key={`${src}-${i}`} className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={src}
+                      alt=""
+                      className="h-20 w-full rounded-xl object-cover ring-1 ring-neutral-200"
+                    />
+                    {i === 0 && (
+                      <span className="absolute left-1.5 top-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-black text-white">
+                        Cover
+                      </span>
+                    )}
+                    <div className="absolute bottom-1.5 right-1.5 flex gap-1">
+                      <button
+                        type="button"
+                        aria-label="Move photo earlier"
+                        disabled={i === 0}
+                        onClick={() => moveCoverSlide(i, -1)}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-white disabled:opacity-30"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="h-3 w-3" aria-hidden>
+                          <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Move photo later"
+                        disabled={i === coverSlides.length - 1}
+                        onClick={() => moveCoverSlide(i, 1)}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-white disabled:opacity-30"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="h-3 w-3" aria-hidden>
+                          <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Remove photo"
+                        onClick={() =>
+                          setCoverSlides((prev) =>
+                            prev.filter((_, j) => j !== i),
+                          )
+                        }
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-white"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3 w-3" aria-hidden>
+                          <path d="M5 5l14 14M19 5L5 19" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-2 flex items-center gap-2">
               <input
-                value={coverUrl}
-                onChange={(e) => setCoverUrl(e.target.value)}
-                placeholder="Cover image URL (or upload) - a wide food photo works best"
+                value={coverInput}
+                onChange={(e) => setCoverInput(e.target.value)}
+                placeholder="Cover image URL - wide food photos work best"
                 className={inputCls}
               />
+              <button
+                type="button"
+                onClick={() => {
+                  addCoverSlide(coverInput);
+                  setCoverInput("");
+                }}
+                className="shrink-0 rounded-full bg-neutral-100 px-4 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-200"
+              >
+                Add
+              </button>
               <label className="shrink-0 cursor-pointer rounded-full bg-neutral-100 px-4 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-200">
                 {uploading === "cover" ? "Uploading..." : "Upload"}
                 <input
@@ -381,14 +481,6 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
                 />
               </label>
             </div>
-            {coverUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={coverUrl}
-                alt=""
-                className="mt-2 h-28 w-full rounded-xl object-cover ring-1 ring-neutral-200"
-              />
-            )}
           </div>
           <label className="flex items-center gap-2 text-sm font-semibold">
             <input
@@ -486,6 +578,7 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
             [
               ["announcement", "Announcement bar"],
               ["featured", "Featured items section"],
+              ["deals", "Deals section"],
               ["about", "About section"],
               ["whatsapp", "WhatsApp chat button"],
               ["location_gate", "Location gate (ask order type and area first)"],

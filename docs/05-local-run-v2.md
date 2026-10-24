@@ -93,12 +93,20 @@ Staff side (per tenant, token auth):
   field `file`, max 5 MB) returns a hosted URL; the item form, the
   Settings logo field and the Settings cover field all have an Upload
   button wired to it.
-- Storefront: brand hero (the profile's optional `cover_url` banner
-  photo over a dark gradient, or a brand-colour gradient when no cover
-  is set), a sticky bar with menu search and category pills with
-  scroll-spy, and item cards that fall back to a branded gradient tile
-  with the item's initial when no photo exists - so imported menus
-  (names + prices only) still look deliberate.
+- Deals at /admin/deals: priced bundles (title, contents list, flat
+  price, optional full price, photo, active flag) served from
+  `/api/staff/catalog/deals`. Active deals render in the storefront
+  Deals section (Appearance toggle) and order like items; checkout
+  prices them from the server row and snapshots title + contents onto
+  the order line, so later edits never change a placed order.
+- Storefront: brand hero carousel - the profile's `cover_photos` slides
+  (up to 6, managed in Settings; `cover_url` mirrors the first slide)
+  crossfade over a dark gradient, with dots and arrows when there is
+  more than one, or a brand-colour gradient when no cover is set; a
+  sticky bar with menu search and category pills with scroll-spy, and
+  item cards that fall back to a branded gradient tile with the item's
+  initial when no photo exists - so imported menus (names + prices
+  only) still look deliberate.
 - Storefront design system (2026-10-23, modelled on a 58-site study of
   indolj client storefronts): brand header bar with circular logo,
   phone pill and open/closed badge (indolj shows none - kept as our
