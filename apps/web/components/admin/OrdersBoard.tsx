@@ -21,6 +21,13 @@ interface OrderSummary {
   payment_method: string;
   source: string;
   created_at: string;
+  rider_name: string;
+  assigned_rider: { id: number; name: string } | null;
+}
+
+interface RiderOption {
+  id: number;
+  name: string;
 }
 interface OrderDetail extends OrderSummary {
   customer_address: string;
@@ -98,6 +105,8 @@ export function OrdersBoard() {
   const [date, setDate] = useState(todayStr());
   const [expanded, setExpanded] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, OrderDetail>>({});
+  const [riders, setRiders] = useState<RiderOption[]>([]);
+  const [assignPick, setAssignPick] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
@@ -118,8 +127,21 @@ export function OrdersBoard() {
     staffFetch("/api/staff/me")
       .then((r) => r.json())
       .then((d) => {
-        setRole(d.user?.role || "");
+        const myRole = d.user?.role || "";
+        setRole(myRole);
         setTenantName(d.tenant?.name || "");
+        if (["owner", "manager", "cashier"].includes(myRole)) {
+          staffFetch("/api/staff/team")
+            .then((r) => r.json())
+            .then((t) => {
+              setRiders(
+                ((t.team || []) as { id: number; name: string; role: string; is_active: boolean }[])
+                  .filter((m) => m.role === "rider" && m.is_active)
+                  .map((m) => ({ id: m.id, name: m.name })),
+              );
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => {});
     const poll = setInterval(load, 20000);
@@ -206,6 +228,37 @@ export function OrdersBoard() {
     }
   };
 
+  const assign = async (id: string) => {
+    const riderId = Number(assignPick[id]);
+    if (!riderId) {
+      setError("Choose a rider first.");
+      return;
+    }
+    setError(null);
+    try {
+      const res = await staffFetch(`/api/staff/orders/${id}/assign`, {
+        method: "POST",
+        body: JSON.stringify({ rider_id: riderId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(body.detail || "Could not assign the rider.");
+        return;
+      }
+      const updated = body as OrderDetail;
+      setDetails((prev) => ({ ...prev, [id]: updated }));
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === id
+            ? { ...o, rider_name: updated.rider_name, assigned_rider: updated.assigned_rider }
+            : o,
+        ),
+      );
+    } catch {
+      setError("Network error while assigning the rider.");
+    }
+  };
+
   const activeCount = orders.filter((o) => !["delivered", "cancelled"].includes(o.status)).length;
   const revenue = orders
     .filter((o) => o.status !== "cancelled")
@@ -262,6 +315,11 @@ export function OrdersBoard() {
                 <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-extrabold capitalize text-neutral-600">
                   {order.type}
                 </span>
+                {(order.assigned_rider || order.rider_name) && (
+                  <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-extrabold text-indigo-700">
+                    Rider: {order.assigned_rider?.name || order.rider_name}
+                  </span>
+                )}
                 <span className="text-sm font-bold text-neutral-500">
                   {order.customer_name} - {order.customer_phone}
                 </span>
@@ -323,6 +381,47 @@ export function OrdersBoard() {
                         >
                           WhatsApp customer
                         </a>
+                        {detail.type === "delivery" && (
+                          <div className="mt-3">
+                            <p className="text-[12px] font-extrabold uppercase tracking-wide text-neutral-400">
+                              Rider
+                            </p>
+                            <p className="mt-0.5 text-[13px] font-semibold text-neutral-600">
+                              {detail.assigned_rider?.name || detail.rider_name || "Not assigned yet"}
+                            </p>
+                            {["owner", "manager", "cashier"].includes(role) &&
+                              !["delivered", "cancelled"].includes(detail.status) && (
+                                <div className="mt-1.5 flex gap-1.5">
+                                  <select
+                                    value={assignPick[detail.id] || ""}
+                                    onChange={(e) =>
+                                      setAssignPick((prev) => ({
+                                        ...prev,
+                                        [detail.id]: e.target.value,
+                                      }))
+                                    }
+                                    className="min-w-0 flex-1 rounded-full border border-neutral-200 px-3 py-1.5 text-[13px] font-semibold outline-none"
+                                  >
+                                    <option value="">
+                                      {riders.length ? "Choose a rider" : "No rider accounts yet"}
+                                    </option>
+                                    {riders.map((r) => (
+                                      <option key={r.id} value={r.id}>
+                                        {r.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    onClick={() => assign(detail.id)}
+                                    disabled={!riders.length}
+                                    className="shrink-0 rounded-full bg-neutral-900 px-4 py-1.5 text-[13px] font-extrabold text-white disabled:opacity-40"
+                                  >
+                                    Assign
+                                  </button>
+                                </div>
+                              )}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <p className="text-[12px] font-extrabold uppercase tracking-wide text-neutral-400">History</p>

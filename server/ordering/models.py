@@ -5,6 +5,7 @@ never rewrite what a customer actually ordered yesterday.
 """
 import uuid
 
+from django.conf import settings
 from django.db import models
 
 
@@ -83,6 +84,13 @@ class Order(models.Model):
     )
     scheduled_for = models.DateTimeField(null=True, blank=True)
     source = models.CharField(max_length=10, choices=Source.choices, default=Source.WEB)
+    # Rider assignment: the staff user (role "rider") taking this delivery,
+    # plus a name snapshot so history survives account changes.
+    assigned_rider = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="assigned_orders",
+    )
+    rider_name = models.CharField(max_length=120, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

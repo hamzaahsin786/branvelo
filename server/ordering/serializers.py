@@ -5,18 +5,36 @@ from rest_framework import serializers
 from ordering.models import Order
 
 
+def _rider_payload(obj):
+    """The assigned rider as {id, name}, or None. Name prefers the live
+    account name, falling back to the order's snapshot."""
+    if obj.assigned_rider_id is None:
+        return None
+    user = obj.assigned_rider
+    name = ""
+    if user is not None:
+        name = user.get_full_name() or user.get_username()
+    return {"id": obj.assigned_rider_id, "name": name or obj.rider_name}
+
+
 class OrderSummarySerializer(serializers.ModelSerializer):
+    assigned_rider = serializers.SerializerMethodField()
+
     class Meta:
         model = Order
         fields = [
             "id", "order_no", "status", "type", "customer_name",
             "customer_phone", "total_pkr", "payment_method", "source",
-            "created_at",
+            "created_at", "rider_name", "assigned_rider",
         ]
+
+    def get_assigned_rider(self, obj):
+        return _rider_payload(obj)
 
 
 class OrderDetailSerializer(serializers.ModelSerializer):
     history = serializers.SerializerMethodField()
+    assigned_rider = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -25,8 +43,11 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "customer_phone", "customer_address", "items", "subtotal_pkr",
             "delivery_fee_pkr", "discount_pkr", "total_pkr", "coupon_code",
             "payment_method", "source", "scheduled_for", "created_at",
-            "updated_at", "history",
+            "updated_at", "history", "rider_name", "assigned_rider",
         ]
+
+    def get_assigned_rider(self, obj):
+        return _rider_payload(obj)
 
     def get_history(self, obj):
         return [

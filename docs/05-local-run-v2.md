@@ -99,6 +99,17 @@ Staff side (per tenant, token auth):
   Deals section (Appearance toggle) and order like items; checkout
   prices them from the server row and snapshots title + contents onto
   the order line, so later edits never change a placed order.
+- Team at /admin/team: staff accounts for this restaurant (name, email
+  login, phone, role: owner, manager, cashier, kitchen, rider). Only
+  the owner can add or change accounts; accounts are deactivated, never
+  deleted, and the last active owner cannot be deactivated or demoted.
+  Served from `/api/staff/team`.
+- Riders: a delivery order can be assigned to a rider from the Orders
+  board (counter roles) or taken by a rider from My Deliveries
+  (/admin/deliveries, rider nav). A rider only ever dispatches and
+  delivers their own assigned orders (or unassigned ones, which they
+  claim by dispatching); the board shows the rider's name and My
+  Deliveries shows what to collect on cash-on-delivery orders.
 - Storefront: brand hero carousel - the profile's `cover_photos` slides
   (up to 6, managed in Settings; `cover_url` mirrors the first slide)
   crossfade over a dark gradient, with dots and arrows when there is

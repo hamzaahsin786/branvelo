@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV = [
+const BASE_NAV = [
   { href: "/admin", label: "Orders" },
   { href: "/admin/menu", label: "Menu" },
   { href: "/admin/deals", label: "Deals" },
@@ -11,11 +11,20 @@ const NAV = [
   { href: "/admin/settings", label: "Settings" },
 ];
 
-export function AdminNav() {
+const TEAM_ROLES = ["owner", "manager", "cashier"];
+
+export function AdminNav({ role = "" }: { role?: string }) {
   const pathname = usePathname();
+  const nav = [...BASE_NAV];
+  if (role === "rider") {
+    nav.splice(1, 0, { href: "/admin/deliveries", label: "My Deliveries" });
+  }
+  if (TEAM_ROLES.includes(role)) {
+    nav.splice(3, 0, { href: "/admin/team", label: "Team" });
+  }
   return (
-    <nav className="mx-auto flex max-w-5xl gap-1 px-4 pb-2">
-      {NAV.map((n) => {
+    <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-2">
+      {nav.map((n) => {
         const active =
           n.href === "/admin" ? pathname === "/admin" : pathname.startsWith(n.href);
         return (

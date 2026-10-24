@@ -19,7 +19,14 @@ from ordering.serializers import (
     PlaceOrderSerializer,
     TransitionSerializer,
 )
-from ordering.services import CheckoutError, TransitionError, place_order, transition_order
+from ordering.services import (
+    AssignmentError,
+    CheckoutError,
+    TransitionError,
+    assign_rider,
+    place_order,
+    transition_order,
+)
 
 
 class PlaceOrderView(APIView):
@@ -127,9 +134,85 @@ class StaffOrderTransitionView(APIView):
                 role=profile.role,
                 actor=request.user.get_username(),
                 schema_name=request.tenant.schema_name,
+                actor_user=request.user,
             )
         except TransitionError as exc:
             return Response(
                 {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
             )
         return Response(OrderDetailSerializer(order).data)
+
+
+class StaffOrderAssignView(APIView):
+    """POST /api/staff/orders/<uuid>/assign {rider_id} - assign the
+    delivery to a rider account (rules in ordering.services.assign_rider)."""
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsActiveStaff]
+
+    def post(self, request, pk):
+        order = get_object_or_404(Order, pk=pk)
+        rider_id = request.data.get("rider_id")
+        if not isinstance(rider_id, int):
+            return Response(
+                {"detail": "rider_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        from django.contrib.auth import get_user_model
+
+        rider = get_object_or_404(get_user_model(), pk=rider_id)
+        profile = request.user.staff_profile
+        try:
+            order = assign_rider(
+                order,
+                rider,
+                actor_role=profile.role,
+                actor_user=request.user,
+                schema_name=request.tenant.schema_name,
+            )
+        except AssignmentError as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(OrderDetailSerializer(order).data)
+
+
+class StaffMyDeliveriesView(APIView):
+    """GET /api/staff/orders/mine - the rider workspace: orders assigned
+    to the caller that still need work, today's delivered count, and (for
+    riders) the unassigned ready deliveries they can take."""
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsActiveStaff]
+
+    def get(self, request):
+        mine = (
+            Order.objects.filter(
+                assigned_rider=request.user,
+                status__in=[Order.Status.READY, Order.Status.DISPATCHED],
+            )
+            .order_by("created_at")
+        )
+        delivered_today = Order.objects.filter(
+            assigned_rider=request.user,
+            status=Order.Status.DELIVERED,
+            created_at__date=timezone.localdate(),
+        ).count()
+        available = Order.objects.none()
+        if request.user.staff_profile.role == "rider":
+            available = (
+                Order.objects.filter(
+                    assigned_rider__isnull=True,
+                    type=Order.Type.DELIVERY,
+                    status=Order.Status.READY,
+                    created_at__date=timezone.localdate(),
+                )
+                .order_by("created_at")
+            )
+        return Response(
+            {
+                "mine": OrderDetailSerializer(mine, many=True).data,
+                "available": OrderSummarySerializer(available, many=True).data,
+                "delivered_today": delivered_today,
+            }
+        )

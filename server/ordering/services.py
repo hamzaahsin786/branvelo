@@ -257,7 +257,7 @@ class TransitionError(Exception):
 
 
 def transition_order(order: Order, to_status: str, *, role: str, actor: str,
-                     schema_name: str) -> Order:
+                     schema_name: str, actor_user=None) -> Order:
     allowed = TRANSITIONS.get(order.status, {})
     roles = allowed.get(to_status)
     if roles is None:
@@ -268,13 +268,79 @@ def transition_order(order: Order, to_status: str, *, role: str, actor: str,
         raise TransitionError(
             f"Your role ({role}) cannot move an order to {to_status}."
         )
+    # A rider works only their own deliveries: an order assigned to a
+    # different rider is off limits (unassigned orders stay open to all).
+    if (
+        role == "rider"
+        and actor_user is not None
+        and order.assigned_rider_id is not None
+        and order.assigned_rider_id != actor_user.id
+    ):
+        raise TransitionError("This order is assigned to another rider.")
     with transaction.atomic():
         previous = order.status
         order.status = to_status
-        order.save(update_fields=["status", "updated_at"])
+        update_fields = ["status", "updated_at"]
+        # Claiming: a rider dispatching an unassigned order takes it.
+        if (
+            role == "rider"
+            and actor_user is not None
+            and to_status == Order.Status.DISPATCHED
+            and order.assigned_rider_id is None
+        ):
+            order.assigned_rider = actor_user
+            order.rider_name = (
+                actor_user.get_full_name() or actor_user.get_username()
+            )
+            update_fields += ["assigned_rider", "rider_name"]
+        order.save(update_fields=update_fields)
         OrderStatusHistory.objects.create(
             order=order, from_status=previous, to_status=to_status, actor=actor,
         )
+        payload = OrderDetailSerializer(order).data
+        transaction.on_commit(
+            lambda: publish_order_event(schema_name, "order.updated", payload)
+        )
+    return order
+
+
+class AssignmentError(Exception):
+    """A rider assignment problem (HTTP 400)."""
+
+
+def assign_rider(order: Order, rider_user, *, actor_role: str, actor_user,
+                 schema_name: str) -> Order:
+    """Assign a delivery order to a rider account.
+
+    Counter roles (owner, manager, cashier) assign any active rider at
+    any point before delivery. A rider can only take an order for
+    themselves, only while it is unassigned, and only once it is ready.
+    """
+    if order.type != Order.Type.DELIVERY:
+        raise AssignmentError("Only delivery orders can be assigned a rider.")
+    if order.status in (Order.Status.DELIVERED, Order.Status.CANCELLED):
+        raise AssignmentError("This order is already finished.")
+    profile = getattr(rider_user, "staff_profile", None)
+    if (
+        profile is None
+        or profile.role != "rider"
+        or not profile.is_active_staff
+        or not rider_user.is_active
+    ):
+        raise AssignmentError("That account is not an active rider.")
+    if actor_role == "rider":
+        if actor_user is None or rider_user.id != actor_user.id:
+            raise AssignmentError("Riders can only take orders for themselves.")
+        if order.assigned_rider_id is not None:
+            raise AssignmentError("This order is already assigned.")
+        if order.status != Order.Status.READY:
+            raise AssignmentError("Only ready orders can be taken.")
+    elif actor_role not in {"owner", "manager", "cashier"}:
+        raise AssignmentError("Your role cannot assign riders.")
+    with transaction.atomic():
+        order.assigned_rider = rider_user
+        order.rider_name = rider_user.get_full_name() or rider_user.get_username()
+        order.save(update_fields=["assigned_rider", "rider_name", "updated_at"])
         payload = OrderDetailSerializer(order).data
         transaction.on_commit(
             lambda: publish_order_event(schema_name, "order.updated", payload)
