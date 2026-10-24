@@ -8,6 +8,7 @@ from catalog.imports import (
     SheetPreviewView,
 )
 from catalog.views import (
+    BranchViewSet,
     CategoryViewSet,
     CouponViewSet,
     DealViewSet,
@@ -25,6 +26,7 @@ router.register("items", MenuItemViewSet)
 router.register("modifier-groups", ModifierGroupViewSet)
 router.register("modifier-options", ModifierOptionViewSet)
 router.register("zones", DeliveryZoneViewSet)
+router.register("branches", BranchViewSet)
 router.register("coupons", CouponViewSet)
 router.register("deals", DealViewSet)
 

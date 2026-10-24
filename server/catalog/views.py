@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 
 from accounts.permissions import IsStaffWriter
 from catalog.models import (
+    Branch,
     Category,
     Coupon,
     Deal,
@@ -31,6 +32,7 @@ from catalog.models import (
     RestaurantProfile,
 )
 from catalog.serializers import (
+    BranchSerializer,
     CategorySerializer,
     CouponSerializer,
     DealSerializer,
@@ -80,6 +82,11 @@ class ModifierOptionViewSet(_StaffViewSet):
 class DeliveryZoneViewSet(_StaffViewSet):
     queryset = DeliveryZone.objects.all()
     serializer_class = DeliveryZoneSerializer
+
+
+class BranchViewSet(_StaffViewSet):
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer
 
 
 class CouponViewSet(_StaffViewSet):
@@ -177,6 +184,12 @@ class StaffProfileView(APIView):
             "announcement": profile.announcement,
             "is_open": profile.is_open,
             "theme": profile.theme,
+            "tax_country": profile.tax_country,
+            "tax_rate_percent": profile.tax_rate_percent,
+            "tax_digital_rate_percent": profile.tax_digital_rate_percent,
+            "tax_name": profile.tax_name,
+            "tax_on_delivery": profile.tax_on_delivery,
+            "seo_text": profile.seo_text,
             "hours": [
                 {
                     "weekday": row.weekday,
@@ -216,7 +229,28 @@ class StaffProfileView(APIView):
             "announcement": None,
             "logo_url": 200,
             "cover_url": 500,
+            "tax_country": 2,
+            "tax_name": 20,
+            "seo_text": None,
         }
+        if "tax_rate_percent" in data:
+            try:
+                profile.tax_rate_percent = (
+                    None if data["tax_rate_percent"] in (None, "")
+                    else max(0, min(100, float(data["tax_rate_percent"])))
+                )
+            except (TypeError, ValueError):
+                pass
+        if "tax_digital_rate_percent" in data:
+            try:
+                profile.tax_digital_rate_percent = (
+                    None if data["tax_digital_rate_percent"] in (None, "")
+                    else max(0, min(100, float(data["tax_digital_rate_percent"])))
+                )
+            except (TypeError, ValueError):
+                pass
+        if "tax_on_delivery" in data and isinstance(data["tax_on_delivery"], bool):
+            profile.tax_on_delivery = data["tax_on_delivery"]
         for field, limit in limits.items():
             if field in data and isinstance(data[field], str):
                 value = data[field].strip()
@@ -313,6 +347,55 @@ class StorefrontView(APIView):
         zones = DeliveryZoneSerializer(
             DeliveryZone.objects.filter(is_active=True), many=True
         ).data
+        branches = BranchSerializer(
+            Branch.objects.filter(is_active=True), many=True
+        ).data
+        # Most ordered right now: count item quantities across recent
+        # orders (the line snapshots carry item_id), top 4 with photos.
+        from collections import Counter
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from ordering.models import Order
+
+        counts: Counter = Counter()
+        recent = Order.objects.filter(
+            created_at__gte=timezone.now() - timedelta(days=90),
+            status__in=[
+                Order.Status.PLACED, Order.Status.CONFIRMED,
+                Order.Status.PREPARING, Order.Status.READY,
+                Order.Status.DISPATCHED, Order.Status.DELIVERED,
+            ],
+        ).values_list("items", flat=True)[:200]
+        for lines in recent:
+            for line in lines or []:
+                if line.get("item_id") is not None:
+                    counts[line["item_id"]] += line.get("qty", 1)
+        popular_items = []
+        if counts:
+            top = MenuItem.objects.filter(
+                pk__in=[pk for pk, _ in counts.most_common(4)],
+                is_available=True,
+            )
+            by_id = {item.pk: item for item in top}
+            for pk, qty in counts.most_common(4):
+                item = by_id.get(pk)
+                if item is not None:
+                    popular_items.append(
+                        {
+                            "id": item.id,
+                            "name": item.name,
+                            "price_pkr": item.price_pkr,
+                            "photo_url": item.photo_url,
+                            "ordered_qty": qty,
+                        }
+                    )
+        from catalog.tax_rules import COUNTRY_TAX_RULES
+
+        rule = COUNTRY_TAX_RULES.get(
+            (profile.tax_country or "PK").upper(), COUNTRY_TAX_RULES["PK"]
+        )
         return Response(
             {
                 "profile": {
@@ -326,6 +409,22 @@ class StorefrontView(APIView):
                     "announcement": profile.announcement,
                     "is_open": profile.is_open,
                     "theme": profile.theme,
+                    "seo_text": profile.seo_text,
+                    "tax": {
+                        "country": (profile.tax_country or "PK").upper(),
+                        "name": profile.tax_name or rule[0],
+                        "standard_rate": (
+                            profile.tax_rate_percent
+                            if profile.tax_rate_percent is not None
+                            else rule[1]
+                        ),
+                        "digital_rate": (
+                            profile.tax_digital_rate_percent
+                            if profile.tax_digital_rate_percent is not None
+                            else rule[2]
+                        ),
+                        "on_delivery": profile.tax_on_delivery,
+                    },
                 },
                 "hours": hours,
                 "categories": cat_payload,
@@ -333,5 +432,7 @@ class StorefrontView(APIView):
                     Deal.objects.filter(is_active=True), many=True
                 ).data,
                 "zones": zones,
+                "branches": branches,
+                "popular_items": popular_items,
             }
         )

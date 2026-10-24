@@ -45,6 +45,18 @@ class RestaurantProfile(models.Model):
     address = models.TextField(blank=True)
     city = models.CharField(max_length=80, blank=True)
     currency = models.CharField(max_length=3, default="PKR")
+    # Tax: the restaurant's country picks the default rule (see
+    # catalog/tax_rules.py); the rate fields override it. Pakistan is
+    # the special case: provincial restaurant rates differ by payment
+    # method (cash vs digital), so both rates are stored.
+    tax_country = models.CharField(max_length=2, default="PK")
+    tax_rate_percent = models.FloatField(null=True, blank=True)
+    tax_digital_rate_percent = models.FloatField(null=True, blank=True)
+    tax_name = models.CharField(max_length=20, blank=True)
+    tax_on_delivery = models.BooleanField(default=True)
+    seo_text = models.TextField(
+        blank=True, help_text="Short marketing text for the footer.",
+    )
     announcement = models.TextField(blank=True)
     is_open = models.BooleanField(
         default=True, help_text="Manual override: closed stops new orders."
@@ -194,11 +206,33 @@ class DeliveryZone(models.Model):
     free_above_pkr = models.IntegerField(
         null=True, blank=True, help_text="Free delivery above this subtotal.",
     )
+    eta_minutes = models.IntegerField(
+        default=45, help_text="Typical delivery time shown to customers.",
+    )
     is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = "delivery_zones"
         ordering = ["id"]
+
+    def __str__(self):
+        return self.name
+
+
+class Branch(models.Model):
+    """A physical outlet of the restaurant. Pickup orders choose one;
+    delivery stays zone-based. Branches are display + pickup data, not
+    separate tenants."""
+
+    name = models.CharField(max_length=80)
+    address = models.TextField(blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    sort = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "branches"
+        ordering = ["sort", "id"]
 
     def __str__(self):
         return self.name

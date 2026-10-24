@@ -41,9 +41,10 @@ class OrderDetailSerializer(serializers.ModelSerializer):
         fields = [
             "id", "order_no", "status", "type", "customer_name",
             "customer_phone", "customer_address", "items", "subtotal_pkr",
-            "delivery_fee_pkr", "discount_pkr", "total_pkr", "coupon_code",
-            "payment_method", "source", "scheduled_for", "created_at",
-            "updated_at", "history", "rider_name", "assigned_rider",
+            "delivery_fee_pkr", "discount_pkr", "tax_pkr", "total_pkr",
+            "coupon_code", "payment_method", "source", "scheduled_for",
+            "created_at", "updated_at", "history", "rider_name",
+            "assigned_rider", "customer_note", "branch_name",
         ]
 
     def get_assigned_rider(self, obj):
@@ -68,6 +69,11 @@ class OrderLineInput(serializers.Serializer):
     item_id = serializers.IntegerField(required=False, allow_null=True)
     deal_id = serializers.IntegerField(required=False, allow_null=True)
     qty = serializers.IntegerField(min_value=1, max_value=50)
+    # The customer's per-item instruction ("less spicy"), snapshotted
+    # onto the line so the kitchen and rider see it.
+    note = serializers.CharField(
+        max_length=200, required=False, allow_blank=True, default=""
+    )
     modifier_option_ids = serializers.ListField(
         child=serializers.IntegerField(), required=False, default=list
     )
@@ -100,6 +106,10 @@ class PlaceOrderSerializer(serializers.Serializer):
         choices=["cod", "jazzcash", "easypaisa"], default="cod"
     )
     scheduled_for = serializers.DateTimeField(required=False, allow_null=True)
+    customer_note = serializers.CharField(
+        max_length=500, required=False, allow_blank=True, default=""
+    )
+    branch_id = serializers.IntegerField(required=False, allow_null=True)
 
 
 class TransitionSerializer(serializers.Serializer):

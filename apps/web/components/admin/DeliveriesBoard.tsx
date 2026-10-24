@@ -8,6 +8,7 @@ interface DeliveryItem {
   name: string;
   qty: number;
   line_total_pkr: number;
+  note?: string;
 }
 
 interface MyOrder {
@@ -21,6 +22,9 @@ interface MyOrder {
   total_pkr: number;
   payment_method: string;
   created_at: string;
+  customer_note: string;
+  branch_name: string;
+  scheduled_for: string | null;
 }
 
 interface AvailableOrder {
@@ -167,10 +171,30 @@ export function DeliveriesBoard() {
                 {order.customer_address}
               </p>
             )}
+            {order.customer_note && (
+              <p className="mt-1 rounded-xl bg-amber-50 px-3 py-2 text-[13px] font-bold text-amber-800">
+                Customer note: {order.customer_note}
+              </p>
+            )}
+            {order.branch_name && (
+              <p className="mt-1 text-[13px] font-semibold text-neutral-500">
+                Pickup branch: {order.branch_name}
+              </p>
+            )}
+            {order.scheduled_for && (
+              <p className="mt-1 text-[13px] font-semibold text-neutral-500">
+                Scheduled for: {new Date(order.scheduled_for).toLocaleString("en-PK")}
+              </p>
+            )}
             <div className="mt-2 border-t border-neutral-100 pt-2">
               {order.items.map((line, i) => (
                 <p key={i} className="text-[13px] font-semibold text-neutral-500">
                   {line.qty} x {line.name} - {formatRs(line.line_total_pkr)}
+                  {line.note && (
+                    <span className="block text-[12px] font-semibold italic text-amber-700">
+                      Note: {line.note}
+                    </span>
+                  )}
                 </p>
               ))}
               <p className="mt-1.5 text-sm font-black">

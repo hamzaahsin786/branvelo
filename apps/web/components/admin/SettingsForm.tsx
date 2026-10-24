@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatRs } from "@branvelo/shared";
 import { uploadStaffPhoto, useStaffApi } from "@/lib/staff-api";
 
@@ -39,6 +39,12 @@ export interface ProfilePayload {
   is_open: boolean;
   theme: Theme;
   hours: HoursRow[];
+  tax_country?: string;
+  tax_rate_percent?: number | null;
+  tax_digital_rate_percent?: number | null;
+  tax_name?: string;
+  tax_on_delivery?: boolean;
+  seo_text?: string;
 }
 
 export interface Zone {
@@ -48,8 +54,39 @@ export interface Zone {
   fee_pkr: number;
   min_order_pkr: number;
   free_above_pkr: number | null;
+  eta_minutes: number;
   is_active: boolean;
 }
+
+export interface BranchRow {
+  id: number;
+  name: string;
+  address: string;
+  phone: string;
+  sort: number;
+  is_active: boolean;
+}
+
+const TAX_COUNTRIES = [
+  ["PK", "Pakistan (GST)"],
+  ["IN", "India (GST)"],
+  ["AE", "UAE (VAT)"],
+  ["SA", "Saudi Arabia (VAT)"],
+  ["GB", "United Kingdom (VAT)"],
+  ["US", "United States (sales tax)"],
+  ["CA", "Canada (GST)"],
+  ["AU", "Australia (GST)"],
+  ["DE", "Germany (VAT)"],
+  ["BD", "Bangladesh (VAT)"],
+  ["EG", "Egypt (VAT)"],
+  ["NG", "Nigeria (VAT)"],
+  ["KE", "Kenya (VAT)"],
+  ["ZA", "South Africa (VAT)"],
+  ["LK", "Sri Lanka (VAT)"],
+  ["OM", "Oman (VAT)"],
+  ["BH", "Bahrain (VAT)"],
+  ["JO", "Jordan (GST)"],
+] as const;
 
 interface Props {
   initialProfile: ProfilePayload;
@@ -185,7 +222,37 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
     fee: "",
     min_order: "",
     free_above: "",
+    eta: "45",
   });
+
+  // Tax + SEO
+  const [taxCountry, setTaxCountry] = useState(initialProfile.tax_country ?? "PK");
+  const [taxRate, setTaxRate] = useState(
+    initialProfile.tax_rate_percent != null ? String(initialProfile.tax_rate_percent) : "",
+  );
+  const [taxDigitalRate, setTaxDigitalRate] = useState(
+    initialProfile.tax_digital_rate_percent != null ? String(initialProfile.tax_digital_rate_percent) : "",
+  );
+  const [taxName, setTaxName] = useState(initialProfile.tax_name ?? "");
+  const [taxOnDelivery, setTaxOnDelivery] = useState(initialProfile.tax_on_delivery ?? true);
+  const [seoText, setSeoText] = useState(initialProfile.seo_text ?? "");
+
+  // Branches
+  const [branches, setBranches] = useState<BranchRow[]>([]);
+  const [branchesLoaded, setBranchesLoaded] = useState(false);
+  const [branchForm, setBranchForm] = useState({ id: "", name: "", address: "", phone: "" });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api("/api/staff/catalog/branches");
+        const data = await res.json().catch(() => []);
+        if (res.ok && Array.isArray(data)) setBranches(data as BranchRow[]);
+      } catch { /* branches stay empty; the section explains itself */ }
+      setBranchesLoaded(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function flash(note: string) {
     setSavedNote(note);
@@ -224,9 +291,73 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
         logo_url: logoUrl.trim(),
         cover_url: coverSlides[0] ?? "",
         cover_photos: coverSlides,
+        seo_text: seoText.trim(),
       },
       "Restaurant details saved.",
     );
+
+  const saveTax = () =>
+    patchProfile(
+      {
+        tax_country: taxCountry,
+        tax_rate_percent: taxRate === "" ? null : Math.max(0, Math.min(100, Number(taxRate) || 0)),
+        tax_digital_rate_percent:
+          taxDigitalRate === "" ? null : Math.max(0, Math.min(100, Number(taxDigitalRate) || 0)),
+        tax_name: taxName.trim(),
+        tax_on_delivery: taxOnDelivery,
+      },
+      "Tax settings saved.",
+    );
+
+  const saveBranch = async () => {
+    setError(null);
+    const payload = {
+      name: branchForm.name.trim(),
+      address: branchForm.address.trim(),
+      phone: branchForm.phone.trim(),
+      is_active: true,
+    };
+    if (payload.name.length < 2) {
+      setError("Branch needs a name");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = branchForm.id
+        ? await api(`/api/staff/catalog/branches/${branchForm.id}`, {
+            method: "PATCH",
+            body: JSON.stringify(payload),
+          })
+        : await api("/api/staff/catalog/branches", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.detail || "Could not save branch");
+      const saved = data as BranchRow;
+      setBranches((bs) =>
+        branchForm.id ? bs.map((b) => (b.id === saved.id ? saved : b)) : [...bs, saved],
+      );
+      setBranchForm({ id: "", name: "", address: "", phone: "" });
+      flash("Branch saved.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Branch save failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deleteBranch = async (id: number) => {
+    if (!confirm("Delete this branch?")) return;
+    setError(null);
+    try {
+      const res = await api(`/api/staff/catalog/branches/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Could not delete branch");
+      setBranches((bs) => bs.filter((b) => b.id !== id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
 
   const saveAppearance = () => patchProfile({ theme }, "Appearance saved.");
 
@@ -245,6 +376,7 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
       free_above_pkr: zoneForm.free_above
         ? Math.max(0, Math.round(Number(zoneForm.free_above)))
         : null,
+      eta_minutes: Math.max(5, Math.min(240, Math.round(Number(zoneForm.eta) || 45))),
       is_active: true,
     };
     if (payload.name.length < 2) {
@@ -279,6 +411,7 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
         fee: "",
         min_order: "",
         free_above: "",
+        eta: "45",
       });
       flash("Zone saved.");
     } catch (e) {
@@ -491,6 +624,13 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
             />
             Accepting orders (turn off to pause the storefront)
           </label>
+          <textarea
+            value={seoText}
+            onChange={(e) => setSeoText(e.target.value)}
+            placeholder="Footer marketing text (optional, shown under the storefront footer)"
+            rows={3}
+            className={inputCls}
+          />
           <button onClick={saveRestaurant} disabled={busy} className={saveBtn}>
             Save restaurant
           </button>
@@ -697,6 +837,7 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
                         z.free_above_pkr != null
                           ? String(z.free_above_pkr)
                           : "",
+                      eta: String(z.eta_minutes ?? 45),
                     })
                   }
                   className="rounded-full px-3 py-1 text-xs font-bold text-blue-700 hover:bg-blue-50"
@@ -761,6 +902,18 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
             inputMode="numeric"
             className={`${inputCls} col-span-2`}
           />
+          <input
+            value={zoneForm.eta}
+            onChange={(e) =>
+              setZoneForm({
+                ...zoneForm,
+                eta: e.target.value.replace(/\D/g, ""),
+              })
+            }
+            placeholder="Delivery time (minutes, e.g. 45)"
+            inputMode="numeric"
+            className={inputCls}
+          />
         </div>
         <div className="mt-3 flex gap-2">
           <button
@@ -780,6 +933,7 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
                   fee: "",
                   min_order: "",
                   free_above: "",
+                  eta: "45",
                 })
               }
               className="rounded-full px-4 py-2.5 text-sm font-bold text-neutral-500"
@@ -788,6 +942,144 @@ export function SettingsForm({ initialProfile, initialZones }: Props) {
             </button>
           )}
         </div>
+      </section>
+
+      {/* branches */}
+      <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-neutral-100">
+        <h2 className={sectionTitle}>Branches (pickup)</h2>
+        <p className="mt-2 text-[13px] font-semibold text-neutral-500">
+          Extra outlets customers can pick up from. Delivery stays zone-based.
+          With no branches, pick-up uses the main restaurant address.
+        </p>
+        <ul className="mt-2 flex flex-col gap-2">
+          {branches.map((b) => (
+            <li
+              key={b.id}
+              className="flex items-center justify-between rounded-xl bg-neutral-50 px-3 py-2"
+            >
+              <div className="text-sm">
+                <span className="font-bold">{b.name}</span>
+                {b.address && (
+                  <span className="ml-2 text-xs text-neutral-500">{b.address}</span>
+                )}
+              </div>
+              <span className="flex gap-1">
+                <button
+                  onClick={() =>
+                    setBranchForm({
+                      id: String(b.id),
+                      name: b.name,
+                      address: b.address,
+                      phone: b.phone,
+                    })
+                  }
+                  className="rounded-full px-3 py-1 text-xs font-bold text-blue-700 hover:bg-blue-50"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => deleteBranch(b.id)}
+                  className="rounded-full px-3 py-1 text-xs font-bold text-red-700 hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <input
+            value={branchForm.name}
+            onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })}
+            placeholder="Branch name"
+            className={inputCls}
+          />
+          <input
+            value={branchForm.phone}
+            onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })}
+            placeholder="Branch phone (optional)"
+            className={inputCls}
+          />
+          <input
+            value={branchForm.address}
+            onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })}
+            placeholder="Branch address"
+            className={`${inputCls} col-span-2`}
+          />
+        </div>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={saveBranch}
+            disabled={busy}
+            className="flex-1 rounded-full bg-neutral-900 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+          >
+            {branchForm.id ? "Save branch" : "Add branch"}
+          </button>
+          {branchForm.id && (
+            <button
+              onClick={() => setBranchForm({ id: "", name: "", address: "", phone: "" })}
+              className="rounded-full px-4 py-2.5 text-sm font-bold text-neutral-500"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* tax */}
+      <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-neutral-100">
+        <h2 className={sectionTitle}>Tax</h2>
+        <p className="mt-2 text-[13px] font-semibold text-neutral-500">
+          The country picks the default rate; the rate fields override it.
+          Pakistan is special: cash and digital payments are taxed
+          differently (Punjab 16% cash / 8% digital; Sindh 15% cash / 8%
+          digital), so both rates are set here. Rates are added on top of
+          menu prices and shown as their own line at checkout. Confirm
+          your exact rate with your tax adviser.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <select
+            value={taxCountry}
+            onChange={(e) => setTaxCountry(e.target.value)}
+            className={inputCls}
+          >
+            {TAX_COUNTRIES.map(([code, label]) => (
+              <option key={code} value={code}>{label}</option>
+            ))}
+          </select>
+          <input
+            value={taxName}
+            onChange={(e) => setTaxName(e.target.value)}
+            placeholder="Tax label (e.g. GST, VAT - blank for default)"
+            className={inputCls}
+          />
+          <input
+            value={taxRate}
+            onChange={(e) => setTaxRate(e.target.value.replace(/[^\d.]/g, ""))}
+            placeholder="Standard rate % (blank for country default)"
+            inputMode="decimal"
+            className={inputCls}
+          />
+          <input
+            value={taxDigitalRate}
+            onChange={(e) => setTaxDigitalRate(e.target.value.replace(/[^\d.]/g, ""))}
+            placeholder="Digital-payment rate % (Pakistan only, blank for default)"
+            inputMode="decimal"
+            className={inputCls}
+          />
+        </div>
+        <label className="mt-3 flex items-center gap-2 text-sm font-semibold">
+          <input
+            type="checkbox"
+            checked={taxOnDelivery}
+            onChange={(e) => setTaxOnDelivery(e.target.checked)}
+            className="h-4 w-4"
+          />
+          Charge tax on the delivery fee too
+        </label>
+        <button onClick={saveTax} disabled={busy} className={`${saveBtn} mt-3`}>
+          Save tax settings
+        </button>
       </section>
     </div>
   );

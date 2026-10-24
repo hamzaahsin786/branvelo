@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { slugFromHostname, tenantApiOrigin } from "@/lib/staff-api";
 import { PoweredBy } from "./PoweredBy";
+import { CartPanel } from "./CartPanel";
 
 interface Theme {
   primary: string;
@@ -76,6 +77,29 @@ interface Zone {
   fee_pkr: number;
   min_order_pkr: number;
   free_above_pkr: number | null;
+  eta_minutes: number;
+}
+interface Branch {
+  id: number;
+  name: string;
+  address: string;
+  phone: string;
+  sort: number;
+  is_active: boolean;
+}
+interface TaxRule {
+  country: string;
+  name: string;
+  standard_rate: number;
+  digital_rate: number | null;
+  on_delivery: boolean;
+}
+interface PopularItem {
+  id: number;
+  name: string;
+  price_pkr: number;
+  photo_url: string;
+  ordered_qty: number;
 }
 
 /** What the location gate captured: how the customer wants their food,
@@ -84,6 +108,7 @@ interface GateSelection {
   type: "delivery" | "pickup";
   zone_id: number | null;
   area: string;
+  branch_id?: number | null;
 }
 interface StorefrontData {
   profile: {
@@ -97,11 +122,15 @@ interface StorefrontData {
     announcement: string;
     is_open: boolean;
     theme: Theme;
+    seo_text: string;
+    tax: TaxRule;
   };
   hours: { weekday: number; open: string | null; close: string | null; is_closed: boolean }[];
   categories: Category[];
   deals: Deal[];
   zones: Zone[];
+  branches: Branch[];
+  popular_items: PopularItem[];
 }
 
 interface CartOption {
@@ -110,7 +139,7 @@ interface CartOption {
   name: string;
   price_delta: number;
 }
-interface CartLine {
+export interface CartLine {
   key: string;
   item_id: number;
   deal_id: number | null;
@@ -118,6 +147,7 @@ interface CartLine {
   unit_price: number;
   qty: number;
   options: CartOption[];
+  note: string;
 }
 
 const FONT_STACKS: Record<string, string> = {
@@ -147,12 +177,64 @@ function waLink(phone: string): string {
   return `https://wa.me/${digits}`;
 }
 
+/** The tax rate for a payment method under the restaurant's rule:
+ * Pakistan charges a lower rate on digital payments (cards, wallets,
+ * QR) than on cash; everywhere else one rate applies. */
+export function taxRateFor(tax: TaxRule, payment: string): number {
+  if (
+    (payment === "jazzcash" || payment === "easypaisa" || payment === "card") &&
+    tax.digital_rate !== null &&
+    tax.digital_rate !== undefined
+  ) {
+    return tax.digital_rate;
+  }
+  return tax.standard_rate;
+}
+
+/** Whole-rupee tax on an amount at a percentage rate. */
+export function calcTax(amount: number, rate: number): number {
+  if (!rate) return 0;
+  return Math.round((amount * rate) / 100);
+}
+
+/** Next opening time as a short label ("Today 5:00 PM", "Tue 11:00 AM"),
+ * or null when the restaurant has no usable hours. weekday: 0 = Monday. */
+export function nextOpeningLabel(
+  hours: { weekday: number; open: string | null; close: string | null; is_closed: boolean }[],
+): string | null {
+  const now = new Date();
+  const todayIdx = (now.getDay() + 6) % 7;
+  const fmt = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d.toLocaleTimeString("en-PK", { hour: "numeric", minute: "2-digit" });
+  };
+  for (let offset = 0; offset < 7; offset++) {
+    const idx = (todayIdx + offset) % 7;
+    const row = hours.find((h) => h.weekday === idx);
+    if (!row || row.is_closed || !row.open) continue;
+    if (offset === 0) {
+      const [h, m] = row.open.split(":").map(Number);
+      const openAt = new Date();
+      openAt.setHours(h, m, 0, 0);
+      if (openAt > now) return `Today ${fmt(row.open)}`;
+      continue;
+    }
+    return `${DAY_NAMES[idx]} ${fmt(row.open)}`;
+  }
+  return null;
+}
+
 export function Storefront() {
   const [data, setData] = useState<StorefrontData | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [sheetItem, setSheetItem] = useState<Item | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [seoExpanded, setSeoExpanded] = useState(false);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -323,15 +405,16 @@ export function Storefront() {
   const cartCount = cart.reduce((n, l) => n + l.qty, 0);
   const cartSubtotal = cart.reduce((n, l) => n + l.unit_price * l.qty, 0);
 
-  const addLine = (item: Item, options: CartOption[], qty: number) => {
-    const key = `${item.id}:${options.map((o) => o.id).sort((a, b) => a - b).join(",")}`;
+  const addLine = (item: Item, options: CartOption[], qty: number, note = "") => {
+    const cleanNote = note.trim().slice(0, 200);
+    const key = `${item.id}:${options.map((o) => o.id).sort((a, b) => a - b).join(",")}:${cleanNote}`;
     const unit = item.price + options.reduce((n, o) => n + o.price_delta, 0);
     setCart((prev) => {
       const existing = prev.find((l) => l.key === key);
       if (existing) {
         return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + qty } : l));
       }
-      return [...prev, { key, item_id: item.id, deal_id: null, name: item.name, unit_price: unit, qty, options }];
+      return [...prev, { key, item_id: item.id, deal_id: null, name: item.name, unit_price: unit, qty, options, note: cleanNote }];
     });
     setSheetItem(null);
   };
@@ -353,10 +436,47 @@ export function Storefront() {
           unit_price: deal.price_pkr,
           qty: 1,
           options: [],
+          note: "",
         },
       ];
     });
   };
+
+  /** The plain (no modifiers, no note) cart line for an item, if one
+   * exists - used to render a qty stepper on the card instead of Add. */
+  const plainLineFor = (itemId: number) =>
+    cart.find(
+      (l) => l.item_id === itemId && l.deal_id === null && l.options.length === 0 && !l.note,
+    );
+
+  const changeQty = (key: string, delta: number) => {
+    setCart((prev) =>
+      prev
+        .map((l) => (l.key === key ? { ...l, qty: l.qty + delta } : l))
+        .filter((l) => l.qty > 0),
+    );
+  };
+
+  /** Copy a shareable link for an item (opens the item sheet on load). */
+  const shareItem = async (itemId: number) => {
+    const url = `${window.location.origin}${window.location.pathname}?item=${itemId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareMsg("Link copied - send it to anyone.");
+    } catch {
+      setShareMsg(url);
+    }
+    window.setTimeout(() => setShareMsg(null), 4000);
+  };
+
+  // Deep link: ?item=<id> opens that item's sheet once the menu loads.
+  useEffect(() => {
+    if (state !== "ready" || !data) return;
+    const id = Number(new URLSearchParams(window.location.search).get("item"));
+    if (!id) return;
+    const found = data.categories.flatMap((c) => c.items).find((i) => i.id === id);
+    if (found) setSheetItem(found);
+  }, [state, data]);
 
   const startAdd = (item: Item) => {
     if (item.modifier_groups.length > 0) setSheetItem(item);
@@ -570,6 +690,11 @@ export function Storefront() {
                     : `Open today ${todayHours.open} - ${todayHours.close}`}
                 </span>
               )}
+              {!profile.is_open && nextOpeningLabel(hours) && (
+                <span className="rounded-full bg-black/35 px-3 py-1 text-[12px] font-bold text-white backdrop-blur-sm">
+                  Opens {nextOpeningLabel(hours)}
+                </span>
+              )}
               {zones.length > 0 && (
                 <span className="rounded-full bg-black/35 px-3 py-1 text-[12px] font-bold text-white backdrop-blur-sm">
                   {Math.min(...zones.map((z) => z.fee_pkr)) === 0
@@ -755,6 +880,33 @@ export function Storefront() {
           </section>
         )}
 
+        {!query && (data.popular_items ?? []).length > 0 && (
+          <section className="mt-6">
+            <h2 className="text-lg font-black">Most ordered right now</h2>
+            <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
+              {(data.popular_items ?? []).map((pop) => {
+                const found = categories.flatMap((c) => c.items).find((i) => i.id === pop.id);
+                if (!found) return null;
+                return (
+                  <div key={pop.id} className="w-52 shrink-0 overflow-hidden rounded-[20px] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.05)] ring-1 ring-black/5">
+                    <div className="relative">
+                      <PhotoTile item={found} primary={primary} className="aspect-[16/10] w-full" />
+                      <CardChips item={found} primary={primary} />
+                    </div>
+                    <div className="p-3.5">
+                      <p className="truncate text-sm font-extrabold">{found.name}</p>
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <PriceLine item={found} primary={primary} />
+                        <AddButton primary={primary} disabled={!profile.is_open} onClick={() => startAdd(found)} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {theme.sections.featured && !query && featured.length > 0 && (
           <section className="mt-6">
             <h2 className="text-lg font-black">Featured</h2>
@@ -821,14 +973,38 @@ export function Storefront() {
                       )}
                       <div className="mt-auto pt-2.5">
                         <PriceLine item={item} primary={primary} />
-                        <button
-                          onClick={() => startAdd(item)}
-                          disabled={!profile.is_open}
-                          className="mt-2.5 w-full rounded-full py-2 text-[13px] font-extrabold text-white disabled:opacity-40"
-                          style={{ backgroundColor: primary }}
-                        >
-                          Add
-                        </button>
+                        <div className="mt-2.5 flex items-center gap-2">
+                          {(() => {
+                            const plain = plainLineFor(item.id);
+                            if (plain) {
+                              return (
+                                <div className="flex flex-1 items-center justify-between rounded-full py-1 pl-2 pr-1 ring-1 ring-neutral-200">
+                                  <button onClick={() => changeQty(plain.key, -1)} className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-100 font-black">-</button>
+                                  <span className="text-[13px] font-extrabold">{plain.qty} in cart</span>
+                                  <button onClick={() => changeQty(plain.key, 1)} className="flex h-7 w-7 items-center justify-center rounded-full font-black text-white" style={{ backgroundColor: primary }}>+</button>
+                                </div>
+                              );
+                            }
+                            return (
+                              <button
+                                onClick={() => startAdd(item)}
+                                disabled={!profile.is_open}
+                                className="flex-1 rounded-full py-2 text-[13px] font-extrabold text-white disabled:opacity-40"
+                                style={{ backgroundColor: primary }}
+                              >
+                                Add
+                              </button>
+                            );
+                          })()}
+                          <button
+                            onClick={() => shareItem(item.id)}
+                            aria-label={`Share ${item.name}`}
+                            title="Copy a link to this item"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 ring-1 ring-neutral-200"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden><path d="M12 15V3m0 0L8 7m4-4l4 4" strokeLinecap="round" strokeLinejoin="round" /><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </article>
@@ -839,8 +1015,28 @@ export function Storefront() {
                     )}
                     <div className="min-w-0 flex-1">
                       <ItemText item={item} primary={primary} />
-                      <div className="mt-2">
-                        <AddButton primary={primary} disabled={!profile.is_open} onClick={() => startAdd(item)} />
+                      <div className="mt-2 flex items-center gap-2">
+                        {(() => {
+                          const plain = plainLineFor(item.id);
+                          if (plain) {
+                            return (
+                              <div className="flex items-center gap-2 rounded-full ring-1 ring-neutral-200">
+                                <button onClick={() => changeQty(plain.key, -1)} className="px-3 py-1.5 font-black">-</button>
+                                <span className="text-[12px] font-extrabold">{plain.qty}</span>
+                                <button onClick={() => changeQty(plain.key, 1)} className="px-3 py-1.5 font-black">+</button>
+                              </div>
+                            );
+                          }
+                          return <AddButton primary={primary} disabled={!profile.is_open} onClick={() => startAdd(item)} />;
+                        })()}
+                        <button
+                          onClick={() => shareItem(item.id)}
+                          aria-label={`Share ${item.name}`}
+                          title="Copy a link to this item"
+                          className="flex h-7 w-7 items-center justify-center rounded-full text-neutral-500 ring-1 ring-neutral-200"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5" aria-hidden><path d="M12 15V3m0 0L8 7m4-4l4 4" strokeLinecap="round" strokeLinejoin="round" /><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                        </button>
                       </div>
                     </div>
                   </article>
@@ -904,6 +1100,21 @@ export function Storefront() {
               <a href={`tel:${profile.phone.replace(/\s/g, "")}`} className="hover:underline">{profile.phone}</a>
             </p>
           )}
+          {profile.seo_text && (
+            <div className="mx-auto mt-5 max-w-2xl text-left">
+              <p className={`text-[13px] font-medium leading-relaxed text-neutral-500 ${seoExpanded ? "" : "line-clamp-3"}`}>
+                {profile.seo_text}
+              </p>
+              {profile.seo_text.length > 220 && (
+                <button
+                  onClick={() => setSeoExpanded(!seoExpanded)}
+                  className="mt-1 text-[13px] font-extrabold text-neutral-600 underline"
+                >
+                  {seoExpanded ? "Show less" : "Show more"}
+                </button>
+              )}
+            </div>
+          )}
           <p className="mt-4 text-[12px] font-bold text-neutral-400">
             <PoweredBy className="hover:text-neutral-600 hover:underline" />
           </p>
@@ -937,15 +1148,55 @@ export function Storefront() {
         )}
       </div>
 
-      {cartCount > 0 && !checkoutOpen && (
+      {cartCount > 0 && !checkoutOpen && !cartOpen && (
         <button
-          onClick={() => setCheckoutOpen(true)}
+          onClick={() => setCartOpen(true)}
           className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center justify-between rounded-full px-5 py-3.5 text-sm font-extrabold text-white shadow-lg"
           style={{ backgroundColor: primary }}
         >
           <span>{cartCount} item{cartCount > 1 ? "s" : ""} in cart</span>
-          <span>{formatRs(cartSubtotal)} - Checkout</span>
+          <span>{formatRs(cartSubtotal)} - View cart</span>
         </button>
+      )}
+
+      {shareMsg && (
+        <p className="fixed inset-x-4 bottom-20 z-50 mx-auto max-w-md rounded-2xl bg-neutral-900 px-4 py-2.5 text-center text-[13px] font-bold text-white shadow-lg">
+          {shareMsg}
+        </p>
+      )}
+
+      {cartOpen && (
+        <CartPanel
+          lines={cart}
+          upsells={(() => {
+            const inCart = new Set(cart.map((l) => l.item_id));
+            const all = categories.flatMap((c) => c.items);
+            const ranked = all.filter((i) => !inCart.has(i.id));
+            const badged = ranked.filter(
+              (i) => i.badges.includes("bestseller") || i.badges.includes("popular"),
+            );
+            const rest = ranked.filter(
+              (i) => !i.badges.includes("bestseller") && !i.badges.includes("popular"),
+            );
+            return [...badged, ...rest].slice(0, 6).map((i) => ({
+              id: i.id,
+              name: i.name,
+              price: i.price,
+              photo_url: i.photo_url,
+            }));
+          })()}
+          primary={primary}
+          onQty={(key, delta) => changeQty(key, delta)}
+          onAddUpsell={(itemId) => {
+            const found = categories.flatMap((c) => c.items).find((i) => i.id === itemId);
+            if (found) startAdd(found);
+          }}
+          onCheckout={() => {
+            setCartOpen(false);
+            setCheckoutOpen(true);
+          }}
+          onClose={() => setCartOpen(false)}
+        />
       )}
 
       {sheetItem && (
@@ -953,7 +1204,7 @@ export function Storefront() {
           item={sheetItem}
           primary={primary}
           onClose={() => setSheetItem(null)}
-          onAdd={(options, qty) => addLine(sheetItem, options, qty)}
+          onAdd={(options, qty, note) => addLine(sheetItem, options, qty, note)}
         />
       )}
 
@@ -962,6 +1213,9 @@ export function Storefront() {
           cart={cart}
           setCart={setCart}
           zones={zones}
+          branches={data.branches ?? []}
+          hours={hours}
+          tax={profile.tax}
           subtotal={cartSubtotal}
           primary={primary}
           restaurantName={profile.name}
@@ -974,6 +1228,7 @@ export function Storefront() {
         <LocationGate
           profile={profile}
           zones={zones}
+          branches={data.branches ?? []}
           primary={primary}
           todayHours={todayHours}
           current={gateSel}
@@ -1096,10 +1351,11 @@ function ModifierSheet({
   item: Item;
   primary: string;
   onClose: () => void;
-  onAdd: (options: CartOption[], qty: number) => void;
+  onAdd: (options: CartOption[], qty: number, note: string) => void;
 }) {
   const [selected, setSelected] = useState<Record<number, number[]>>({});
   const [qty, setQty] = useState(1);
+  const [note, setNote] = useState("");
 
   const toggle = (group: ModifierGroup, option: ModifierOption) => {
     setSelected((prev) => {
@@ -1163,7 +1419,14 @@ function ModifierSheet({
             </div>
           </div>
         ))}
-        <div className="mt-5 flex items-center gap-3">
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value.slice(0, 200))}
+          placeholder="Special instructions for this item (optional, e.g. less spicy)"
+          rows={2}
+          className="mt-4 w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none"
+        />
+        <div className="mt-4 flex items-center gap-3">
           <div className="flex items-center gap-2 rounded-full ring-1 ring-neutral-200">
             <button onClick={() => setQty(Math.max(1, qty - 1))} className="px-3 py-2 font-black">-</button>
             <span className="min-w-5 text-center text-sm font-extrabold">{qty}</span>
@@ -1171,7 +1434,7 @@ function ModifierSheet({
           </div>
           <button
             disabled={!valid}
-            onClick={() => onAdd(chosen, qty)}
+            onClick={() => onAdd(chosen, qty, note)}
             className="flex-1 rounded-full py-3 text-sm font-extrabold text-white disabled:opacity-40"
             style={{ backgroundColor: primary }}
           >
@@ -1263,6 +1526,7 @@ function FeedbackBlock({ primary }: { primary: string }) {
 function LocationGate({
   profile,
   zones,
+  branches,
   primary,
   todayHours,
   current,
@@ -1271,6 +1535,7 @@ function LocationGate({
 }: {
   profile: StorefrontData["profile"];
   zones: Zone[];
+  branches: Branch[];
   primary: string;
   todayHours: StorefrontData["hours"][number] | undefined;
   current: GateSelection | null;
@@ -1281,6 +1546,11 @@ function LocationGate({
     current?.type ?? "delivery",
   );
   const [query, setQuery] = useState("");
+  const [branchId, setBranchId] = useState<number | "">(
+    current?.branch_id ?? branches[0]?.id ?? "",
+  );
+  const [gpsBusy, setGpsBusy] = useState(false);
+  const [gpsMsg, setGpsMsg] = useState<string | null>(null);
 
   interface AreaRow {
     zoneId: number;
@@ -1307,6 +1577,62 @@ function LocationGate({
     ? rows.filter((r) => `${r.area} ${r.zoneName}`.toLowerCase().includes(q))
     : rows;
   const multiZone = new Set(rows.map((r) => r.zoneId)).size > 1;
+
+  /** GPS lookup: reverse-geocode the device position (OpenStreetMap
+   * Nominatim, no key needed) and fuzzy-match the suburb against the
+   * delivery areas. Nothing is stored; a miss just shows a message. */
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsMsg("Your device does not support location lookup.");
+      return;
+    }
+    setGpsBusy(true);
+    setGpsMsg(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&addressdetails=1`,
+          );
+          const body = await res.json();
+          const addr = body?.address ?? {};
+          const candidates = [
+            addr.suburb,
+            addr.neighbourhood,
+            addr.city_district,
+            addr.town,
+            addr.city,
+          ]
+            .filter(Boolean)
+            .map((s: string) => s.toLowerCase());
+          const match = rows.find((r) =>
+            candidates.some(
+              (c) =>
+                r.area.toLowerCase().includes(c) ||
+                c.includes(r.area.toLowerCase()) ||
+                r.zoneName.toLowerCase().includes(c),
+            ),
+          );
+          if (match) {
+            onSelect({
+              type: "delivery",
+              zone_id: match.zoneId,
+              area: match.area === match.zoneName ? "" : match.area,
+            });
+          } else {
+            setGpsMsg("We could not match your location to a delivery area. Please pick one below.");
+          }
+        } catch {
+          setGpsMsg("Location lookup failed. Please pick your area below.");
+        }
+        setGpsBusy(false);
+      },
+      () => {
+        setGpsMsg("Location permission was denied. Please pick your area below.");
+        setGpsBusy(false);
+      },
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 sm:items-center" onClick={onSkip}>
@@ -1358,6 +1684,18 @@ function LocationGate({
                 </p>
               ) : (
                 <>
+                  <button
+                    onClick={useCurrentLocation}
+                    disabled={gpsBusy}
+                    className="mt-4 w-full rounded-full py-2.5 text-sm font-extrabold ring-1 ring-neutral-200 disabled:opacity-50"
+                  >
+                    {gpsBusy ? "Finding your area..." : "Use my current location"}
+                  </button>
+                  {gpsMsg && (
+                    <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[13px] font-bold text-amber-800">
+                      {gpsMsg}
+                    </p>
+                  )}
                   <div className="relative mt-4">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden>
                       <circle cx="11" cy="11" r="7" />
@@ -1398,6 +1736,48 @@ function LocationGate({
                 </>
               )}
             </>
+          ) : branches.length > 0 ? (
+            <div className="mt-4">
+              <p className="text-sm font-extrabold">Which outlet will you pick up from?</p>
+              <div className="mt-2 flex flex-col gap-2">
+                {branches.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => setBranchId(b.id)}
+                    className={`rounded-2xl px-4 py-3.5 text-left ring-1 ${branchId === b.id ? "bg-neutral-50 ring-neutral-400" : "bg-white ring-neutral-200"}`}
+                  >
+                    <span className="block text-sm font-extrabold">{b.name}</span>
+                    {b.address && (
+                      <span className="mt-0.5 block text-[13px] font-semibold text-neutral-500">{b.address}</span>
+                    )}
+                    <span className="mt-0.5 block text-[13px] font-semibold text-neutral-500">
+                      {b.phone ? `Call: ${b.phone} - ` : ""}
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(b.address || b.name)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-extrabold underline"
+                      >
+                        Get directions
+                      </a>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {todayHours && (
+                <p className="mt-3 text-[13px] font-semibold text-neutral-500">
+                  {todayHours.is_closed ? "Closed today" : `Open today ${todayHours.open} - ${todayHours.close}`}
+                </p>
+              )}
+              <button
+                onClick={() => onSelect({ type: "pickup", zone_id: null, area: "", branch_id: branchId === "" ? null : branchId })}
+                className="mt-3 w-full rounded-full py-3 text-sm font-extrabold text-white"
+                style={{ backgroundColor: primary }}
+              >
+                Order for pick-up
+              </button>
+            </div>
           ) : (
             <div className="mt-4">
               <div className="rounded-2xl bg-neutral-50 px-4 py-3.5">
@@ -1417,7 +1797,7 @@ function LocationGate({
                 )}
               </div>
               <button
-                onClick={() => onSelect({ type: "pickup", zone_id: null, area: "" })}
+                onClick={() => onSelect({ type: "pickup", zone_id: null, area: "", branch_id: null })}
                 className="mt-3 w-full rounded-full py-3 text-sm font-extrabold text-white"
                 style={{ backgroundColor: primary }}
               >
@@ -1439,6 +1819,9 @@ function CheckoutPanel({
   cart,
   setCart,
   zones,
+  branches,
+  hours,
+  tax,
   subtotal,
   primary,
   restaurantName,
@@ -1448,17 +1831,33 @@ function CheckoutPanel({
   cart: CartLine[];
   setCart: (lines: CartLine[]) => void;
   zones: Zone[];
+  branches: Branch[];
+  hours: { weekday: number; open: string | null; close: string | null; is_closed: boolean }[];
+  tax: TaxRule;
   subtotal: number;
   primary: string;
   restaurantName: string;
   gate: GateSelection | null;
   onClose: () => void;
 }) {
+  // A restaurant with no delivery zones cannot offer delivery at all:
+  // the old panel rendered an empty zone dropdown and a misleading
+  // "Free" delivery line. Delivery is hidden until a zone exists.
+  const deliveryAvailable = zones.length > 0;
   const [type, setType] = useState<"delivery" | "pickup">(
-    gate?.type ?? (zones.length > 0 ? "delivery" : "pickup"),
+    gate?.type === "delivery" && deliveryAvailable
+      ? "delivery"
+      : gate?.type === "pickup"
+        ? "pickup"
+        : deliveryAvailable
+          ? "delivery"
+          : "pickup",
   );
   const [zoneId, setZoneId] = useState<number | "">(
     gate?.zone_id ?? zones[0]?.id ?? "",
+  );
+  const [branchId, setBranchId] = useState<number | "">(
+    gate?.branch_id ?? branches[0]?.id ?? "",
   );
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -1467,11 +1866,16 @@ function CheckoutPanel({
   );
   const [coupon, setCoupon] = useState("");
   const [payment, setPayment] = useState("cod");
+  const [orderNote, setOrderNote] = useState("");
+  const [scheduleOn, setScheduleOn] = useState(false);
+  const [scheduleDay, setScheduleDay] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
 
   const zone = zones.find((z) => z.id === zoneId);
+  const branch = branches.find((b) => b.id === branchId);
   const deliveryFee =
     type === "pickup" || !zone
       ? 0
@@ -1479,6 +1883,41 @@ function CheckoutPanel({
         ? 0
         : zone.fee_pkr;
   const belowMin = type === "delivery" && zone !== undefined && subtotal < zone.min_order_pkr;
+  // Tax is computed on the food total, plus the delivery fee when the
+  // restaurant taxes it. The server recomputes the same figure (on the
+  // discounted total when a coupon applies) and its total wins.
+  const taxRate = taxRateFor(tax, payment);
+  const taxBase = subtotal + (tax.on_delivery ? deliveryFee : 0);
+  const taxAmount = calcTax(taxBase, taxRate);
+  const grandTotal = subtotal + deliveryFee + taxAmount;
+  const etaMinutes = type === "delivery" ? zone?.eta_minutes ?? null : null;
+
+  // Schedule slots: the next 7 days, hourly within each day's hours.
+  const scheduleDays = (() => {
+    const out: { value: string; label: string; slots: string[] }[] = [];
+    const now = new Date();
+    for (let offset = 0; offset < 7; offset++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+      const idx = (d.getDay() + 6) % 7;
+      const row = hours.find((h) => h.weekday === idx);
+      if (!row || row.is_closed || !row.open || !row.close) continue;
+      const [oh, om] = row.open.split(":").map(Number);
+      const [ch, cm] = row.close.split(":").map(Number);
+      const slots: string[] = [];
+      for (let h = oh; h < ch || (h === ch && cm > 0); h++) {
+        const t = `${String(h).padStart(2, "0")}:00`;
+        const slotAt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, 0);
+        if (slotAt > now) slots.push(t);
+        if (h >= 23) break;
+      }
+      if (!slots.length) continue;
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const label =
+        offset === 0 ? `Today (${DAY_NAMES[idx]})` : offset === 1 ? `Tomorrow (${DAY_NAMES[idx]})` : DAY_NAMES[idx];
+      out.push({ value, label, slots });
+    }
+    return out;
+  })();
 
   const setQty = (key: string, qty: number) => {
     setCart(
@@ -1493,8 +1932,15 @@ function CheckoutPanel({
     if (cart.length === 0) return setError("Your cart is empty.");
     if (!name.trim()) return setError("Please enter your name.");
     if (phone.replace(/\D/g, "").length < 10) return setError("Please enter a valid phone number.");
-    if (type === "delivery" && !zone) return setError("Please choose a delivery zone.");
+    if (type === "delivery" && !zone) return setError("Please choose a delivery area.");
     if (type === "delivery" && !address.trim()) return setError("Please enter your delivery address.");
+    let scheduledFor: string | null = null;
+    if (scheduleOn) {
+      const day = scheduleDays.find((d) => d.value === (scheduleDay || scheduleDays[0]?.value));
+      const time = scheduleTime || day?.slots[0];
+      if (!day || !time) return setError("Please choose a date and time for your scheduled order.");
+      scheduledFor = new Date(`${day.value}T${time}:00`).toISOString();
+    }
     setBusy(true);
     try {
       const res = await fetch(`${tenantApiOrigin()}/api/orders/`, {
@@ -1506,17 +1952,21 @@ function CheckoutPanel({
           customer_address: type === "delivery" ? address.trim() : "",
           type,
           zone_id: type === "delivery" ? zoneId : null,
+          branch_id: type === "pickup" && branchId !== "" ? branchId : null,
           items: cart.map((l) =>
             l.deal_id
-              ? { deal_id: l.deal_id, qty: l.qty }
+              ? { deal_id: l.deal_id, qty: l.qty, note: l.note }
               : {
                   item_id: l.item_id,
                   qty: l.qty,
                   modifier_option_ids: l.options.map((o) => o.id),
+                  note: l.note,
                 },
           ),
           coupon_code: coupon.trim(),
           payment_method: payment,
+          customer_note: orderNote.trim(),
+          scheduled_for: scheduledFor,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -1595,7 +2045,7 @@ function CheckoutPanel({
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2">
-              {(["delivery", "pickup"] as const).map((t) => (
+              {(deliveryAvailable ? (["delivery", "pickup"] as const) : (["pickup"] as const)).map((t) => (
                 <button
                   key={t}
                   onClick={() => setType(t)}
@@ -1606,6 +2056,11 @@ function CheckoutPanel({
                 </button>
               ))}
             </div>
+            {!deliveryAvailable && (
+              <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[13px] font-bold text-amber-800">
+                Delivery is not set up for this restaurant yet. Pick-up is available.
+              </p>
+            )}
 
             <div className="mt-3 flex flex-col gap-2.5">
               {type === "delivery" && (
@@ -1615,14 +2070,44 @@ function CheckoutPanel({
                     onChange={(e) => setZoneId(Number(e.target.value))}
                     className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm font-semibold outline-none"
                   >
+                    <option value="" disabled>Choose your delivery area</option>
                     {zones.map((z) => (
                       <option key={z.id} value={z.id}>
                         {z.name} - delivery {z.fee_pkr === 0 ? "free" : formatRs(z.fee_pkr)}
                         {z.free_above_pkr ? ` (free above ${formatRs(z.free_above_pkr)})` : ""}
+                        {` - about ${z.eta_minutes} min`}
                       </option>
                     ))}
                   </select>
                   <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Delivery address (house, street, block)" className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none" />
+                </>
+              )}
+              {type === "pickup" && branches.length > 0 && (
+                <>
+                  <select
+                    value={branchId}
+                    onChange={(e) => setBranchId(Number(e.target.value))}
+                    className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm font-semibold outline-none"
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>Pick up from {b.name}</option>
+                    ))}
+                  </select>
+                  {branch?.address && (
+                    <p className="text-[13px] font-semibold text-neutral-500">
+                      {branch.address}
+                      {branch.phone ? ` - ${branch.phone}` : ""}
+                      {" - "}
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(branch.address)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-extrabold underline"
+                      >
+                        Get directions
+                      </a>
+                    </p>
+                  )}
                 </>
               )}
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none" />
@@ -1633,6 +2118,47 @@ function CheckoutPanel({
                 <option value="jazzcash">JazzCash</option>
                 <option value="easypaisa">EasyPaisa</option>
               </select>
+              <textarea
+                value={orderNote}
+                onChange={(e) => setOrderNote(e.target.value.slice(0, 500))}
+                placeholder="Note for the restaurant (optional, e.g. ring the bell twice)"
+                rows={2}
+                className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none"
+              />
+              <label className="flex items-center gap-2 text-sm font-bold text-neutral-700">
+                <input type="checkbox" checked={scheduleOn} onChange={(e) => setScheduleOn(e.target.checked)} />
+                Schedule for later
+              </label>
+              {scheduleOn && scheduleDays.length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={scheduleDay || scheduleDays[0].value}
+                    onChange={(e) => {
+                      setScheduleDay(e.target.value);
+                      setScheduleTime("");
+                    }}
+                    className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm font-semibold outline-none"
+                  >
+                    {scheduleDays.map((d) => (
+                      <option key={d.value} value={d.value}>{d.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={scheduleTime || (scheduleDays.find((d) => d.value === (scheduleDay || scheduleDays[0].value))?.slots[0] ?? "")}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm font-semibold outline-none"
+                  >
+                    {(scheduleDays.find((d) => d.value === (scheduleDay || scheduleDays[0].value))?.slots ?? []).map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {scheduleOn && scheduleDays.length === 0 && (
+                <p className="text-[13px] font-semibold text-neutral-500">
+                  No open hours in the next 7 days, so scheduling is unavailable.
+                </p>
+              )}
             </div>
 
             <div className="mt-4 space-y-1 text-sm font-semibold text-neutral-600">
@@ -1640,9 +2166,14 @@ function CheckoutPanel({
               {type === "delivery" && (
                 <p className="flex justify-between"><span>Delivery</span><span>{deliveryFee === 0 ? "Free" : formatRs(deliveryFee)}</span></p>
               )}
-              {coupon.trim() && <p className="text-[12px] font-semibold text-neutral-400">Coupon discount is applied by the restaurant system at confirmation.</p>}
+              {taxAmount > 0 && (
+                <p className="flex justify-between"><span>{tax.name} ({taxRate}%)</span><span>{formatRs(taxAmount)}</span></p>
+              )}
+              {etaMinutes !== null && (
+                <p className="flex justify-between"><span>Estimated delivery</span><span>About {etaMinutes} min</span></p>
+              )}
               <p className="flex justify-between border-t border-neutral-100 pt-2 text-base font-black text-neutral-900">
-                <span>Total</span><span>{formatRs(subtotal + deliveryFee)}</span>
+                <span>Total</span><span>{formatRs(grandTotal)}</span>
               </p>
               {belowMin && zone && (
                 <p className="rounded-xl bg-red-50 px-3 py-2 text-[13px] font-bold text-red-700">
@@ -1654,11 +2185,11 @@ function CheckoutPanel({
             {error && <p className="mt-3 rounded-xl bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700">{error}</p>}
             <button
               onClick={place}
-              disabled={busy || cart.length === 0}
+              disabled={busy || cart.length === 0 || (type === "delivery" && !zone) || belowMin}
               className="mt-4 w-full rounded-full py-3.5 text-sm font-extrabold text-white disabled:opacity-40"
               style={{ backgroundColor: primary }}
             >
-              {busy ? "Placing order..." : `Place order - ${formatRs(subtotal + deliveryFee)}`}
+              {busy ? "Placing order..." : `Place order - ${formatRs(grandTotal)}`}
             </button>
           </>
         )}

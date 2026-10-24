@@ -8,6 +8,7 @@ category). Zones/coupons use the plain column names.
 from rest_framework import serializers
 
 from catalog.models import (
+    Branch,
     Category,
     Coupon,
     Deal,
@@ -84,8 +85,14 @@ class DeliveryZoneSerializer(serializers.ModelSerializer):
         model = DeliveryZone
         fields = [
             "id", "name", "areas", "fee_pkr", "min_order_pkr",
-            "free_above_pkr", "is_active",
+            "free_above_pkr", "eta_minutes", "is_active",
         ]
+
+
+class BranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = ["id", "name", "address", "phone", "sort", "is_active"]
 
 
 class DealSerializer(serializers.ModelSerializer):

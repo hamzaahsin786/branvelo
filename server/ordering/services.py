@@ -11,7 +11,16 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
-from catalog.models import Coupon, Deal, DeliveryZone, MenuItem, ModifierOption
+from catalog.models import (
+    Branch,
+    Coupon,
+    Deal,
+    DeliveryZone,
+    MenuItem,
+    ModifierOption,
+    RestaurantProfile,
+)
+from catalog.tax_rules import calc_tax, resolve_tax
 from ordering.events import publish_order_event
 from ordering.models import (
     Customer,
@@ -56,6 +65,7 @@ def _price_lines(raw_items):
                     "unit_price_pkr": deal.price_pkr,
                     "line_total_pkr": deal.price_pkr * qty,
                     "modifiers": [],
+                    "note": (raw.get("note") or "").strip()[:200],
                 }
             )
             subtotal += deal.price_pkr * qty
@@ -105,6 +115,7 @@ def _price_lines(raw_items):
                 "qty": qty,
                 "unit_price_pkr": unit_price,
                 "line_total_pkr": unit_price * qty,
+                "note": (raw.get("note") or "").strip()[:200],
                 "modifiers": [
                     {
                         "group": o.group.name,
@@ -168,7 +179,26 @@ def place_order(data: dict, *, schema_name: str) -> Order:
     lines, subtotal = _price_lines(data["items"])
     delivery_fee, _zone = _delivery_fee(data["type"], data.get("zone_id"), subtotal)
     discount, coupon = _apply_coupon(data.get("coupon_code") or "", subtotal)
-    total = subtotal - discount + delivery_fee
+    # Tax (server-side, authoritative): the restaurant's country rule,
+    # with Pakistan's cash/digital split picked by payment method. The
+    # taxable base is the discounted food total, plus the delivery fee
+    # when the restaurant taxes it.
+    profile = RestaurantProfile.objects.first()
+    tax_info = (
+        resolve_tax(profile, data["payment_method"]) if profile else None
+    )
+    taxable = subtotal - discount
+    if profile is not None and profile.tax_on_delivery:
+        taxable += delivery_fee
+    tax_pkr = calc_tax(taxable, tax_info["rate"]) if tax_info else 0
+    total = subtotal - discount + delivery_fee + tax_pkr
+    branch_name = ""
+    if data.get("branch_id"):
+        branch = Branch.objects.filter(
+            pk=data["branch_id"], is_active=True
+        ).first()
+        if branch is not None:
+            branch_name = branch.name
 
     customer, _created = Customer.objects.get_or_create(phone=phone)
     customer.name = data["customer_name"]
@@ -195,7 +225,10 @@ def place_order(data: dict, *, schema_name: str) -> Order:
         subtotal_pkr=subtotal,
         delivery_fee_pkr=delivery_fee,
         discount_pkr=discount,
+        tax_pkr=tax_pkr,
         total_pkr=total,
+        customer_note=(data.get("customer_note") or "").strip()[:500],
+        branch_name=branch_name,
         coupon_code=coupon.code if coupon else None,
         payment_method=data["payment_method"],
         scheduled_for=data.get("scheduled_for"),

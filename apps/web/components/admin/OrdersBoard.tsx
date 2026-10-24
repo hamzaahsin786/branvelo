@@ -37,11 +37,16 @@ interface OrderDetail extends OrderSummary {
     unit_price_pkr: number;
     line_total_pkr: number;
     modifiers: { group: string; name: string; price_delta_pkr: number }[];
+    note?: string;
   }[];
   subtotal_pkr: number;
   delivery_fee_pkr: number;
   discount_pkr: number;
+  tax_pkr: number;
   coupon_code: string | null;
+  customer_note: string;
+  branch_name: string;
+  scheduled_for: string | null;
   history: { from_status: string | null; to_status: string; actor: string; created_at: string }[];
 }
 
@@ -362,14 +367,35 @@ export function OrdersBoard() {
                                 {line.modifiers.map((m) => `${m.group}: ${m.name}`).join(" - ")}
                               </span>
                             )}
+                            {line.note && (
+                              <span className="block text-[12px] font-semibold italic text-amber-700">
+                                Note: {line.note}
+                              </span>
+                            )}
                           </p>
                         ))}
                         <p className="mt-2 text-[13px] font-semibold text-neutral-500">
                           Subtotal {formatRs(detail.subtotal_pkr)}
                           {detail.discount_pkr > 0 && ` - Discount -${formatRs(detail.discount_pkr)} (${detail.coupon_code || "coupon"})`}
                           {detail.type === "delivery" && ` - Delivery ${detail.delivery_fee_pkr === 0 ? "free" : formatRs(detail.delivery_fee_pkr)}`}
+                          {detail.tax_pkr > 0 && ` - Tax ${formatRs(detail.tax_pkr)}`}
                           {` - ${detail.payment_method === "cod" ? "Cash on delivery" : detail.payment_method}`}
                         </p>
+                        {detail.customer_note && (
+                          <p className="mt-1 rounded-xl bg-amber-50 px-3 py-2 text-[13px] font-bold text-amber-800">
+                            Customer note: {detail.customer_note}
+                          </p>
+                        )}
+                        {detail.branch_name && (
+                          <p className="mt-1 text-[13px] font-semibold text-neutral-500">
+                            Pickup branch: {detail.branch_name}
+                          </p>
+                        )}
+                        {detail.scheduled_for && (
+                          <p className="mt-1 text-[13px] font-semibold text-neutral-500">
+                            Scheduled for: {new Date(detail.scheduled_for).toLocaleString("en-PK")}
+                          </p>
+                        )}
                         {detail.customer_address && (
                           <p className="mt-1 text-[13px] font-semibold text-neutral-500">{detail.customer_address}</p>
                         )}

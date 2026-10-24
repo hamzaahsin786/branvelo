@@ -224,3 +224,35 @@ Customers can now order end to end:
   is fully functional locally).
 - Browser calls from the website reach the API at `localhost:8000`
   (your machine), which is why NEXT_PUBLIC_API_URL points there.
+
+## Tax, branches, scheduling, notes (2026-10-24)
+
+- **Tax** is computed server-side at checkout and shown as its own line.
+  The restaurant's country picks the default rule
+  (`server/catalog/tax_rules.py`); Settings -> Tax overrides the rate,
+  the label, and whether the delivery fee is taxed. Pakistan is the
+  special case: cash and digital payments are taxed differently
+  (Punjab PRA 16% cash / 8% digital under the Finance Act 2026; Sindh
+  SRB 15% cash / 8% digital), so both rates are stored and the payment
+  method picks the rate. A Sindh restaurant sets its standard rate to
+  15. Rates are defaults the restaurant must confirm, not legal advice.
+- **Branches** (Settings -> Branches) are extra pickup outlets. Delivery
+  stays zone-based; a pickup order records the branch name, and the
+  gate + checkout show the branch address with a directions link.
+- **Delivery zones** carry an ETA in minutes (Settings -> Delivery
+  zones), shown in the zone dropdown and at checkout. A restaurant with
+  no zones offers pick-up only; checkout no longer renders an empty
+  zone dropdown.
+- **Scheduling**: checkout offers "Schedule for later" (next 7 days,
+  hourly slots inside opening hours); the order stores `scheduled_for`
+  and staff + rider views show it.
+- **Notes**: an item sheet has a per-item instructions box and checkout
+  has an order note box; both are snapshotted onto the order and shown
+  on the Orders board and the rider's My Deliveries view.
+- **Cart drawer**: the floating cart bar opens a drawer with qty
+  steppers, line notes, and a "Frequently bought with this" upsell rail.
+  Item cards show a stepper once a plain line is in the cart, and a
+  share button copies a `?item=<id>` link that opens the item sheet.
+- **Most ordered right now**: the storefront payload counts item
+  quantities across the last 90 days of orders (top 4) and renders them
+  above the categories when any exist.

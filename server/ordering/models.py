@@ -74,6 +74,12 @@ class Order(models.Model):
     subtotal_pkr = models.IntegerField(default=0)
     delivery_fee_pkr = models.IntegerField(default=0)
     discount_pkr = models.IntegerField(default=0)
+    tax_pkr = models.IntegerField(default=0)
+    customer_note = models.CharField(max_length=500, blank=True)
+    branch_name = models.CharField(
+        max_length=120, blank=True,
+        help_text="Pickup branch snapshot for this order.",
+    )
     total_pkr = models.IntegerField(default=0)
     coupon_code = models.CharField(max_length=32, null=True, blank=True)
     payment_method = models.CharField(
